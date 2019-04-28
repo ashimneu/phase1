@@ -1,0 +1,15 @@
+<launch>
+  <node name="turtle1" pkg="turtlesim" type="turtlesim_node"/>
+  <node name="controller" pkg="two_wheel_robot" type="velocity_controller.py" />
+  <node name="interface" pkg="two_wheel_robot" type="interface.py" />
+  <node name="kalmanfilter" pkg="two_wheel_robot" type="kf.py" output="screen" /> 
+  <!--<node name="pwm" pkg="two_wheel_robot" type="pwm.py"/>-->
+  <!--<node pkg="rosbag" type="record" name="pose_bag" respawn="true"
+            args="-O  $(find two_wheel_robot)/bag/pose_bag.bag /turtle1/pose"
+    />
+
+  <node pkg="rosbag" type="record" name="velocity_bag" respawn="true"
+            args="-O  $(find two_wheel_robot)/bag/velocity_bag.bag /interface/cmd_vel"
+    />
+
+</launch>
