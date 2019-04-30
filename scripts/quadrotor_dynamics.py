@@ -13,18 +13,19 @@ def xdot_2d(y,t,yd):
     kF = 6.11e-8            #[Newton/(rpm)^2]
     kM = 1.59e-9            #[(Newton*meter)/(rpm)^2]
     gamma = kM/kF           #[meter]
+    Kd = [1,1,1]
+    Kp = [1,1,4]
 
     # equillibrium input
     u0 = np.array([[m*g],[0]])
 
-    # trajectory 
-    if t>=0 and t<10:
-        Yd = yd
+    # position controller
+    e = yd[0:5] - y
+    u1 = m*(g + yd[7] + Kd[1]*e[5] +Kp[1]*e[1])
+    theta_d = -1/g*(yd[6] + Kd[0]*e[3] + Kp[0]*e[0])
 
-    # stabilizing feedback
-    e = yd - y
-    K = np.array([ [0, 1.0000, 0, 0, 1.0296, 0], [1.0000, 0, 5.4289, 1.4516, 0, 1.0001] ])     
-    u = -K@e + u0
+    # attitude controller
+    u2 = Ixx*(yd[8] + Kd[2]*e[5] + Kp[2]*e[2])
 
     # dynamics as input-affine nonlinear system
     f = np.array([[y[3]], [y[4]], [y[5]],[0],[-g],[0]])
@@ -43,7 +44,8 @@ x0 = [y0 ,z0, phi0, vy0, vz0, phi_dot_0]
 
 # time points
 t = np.linspace(0,5)
-yd = np.ones([6, len(t)]) 
+#yd = np.ones([6, len(t)]) 
+yd = [5,20,0,0,0,0]
 
 # solve ODE
 x = odeint(xdot_2d,x0,t,args=(yd,))
