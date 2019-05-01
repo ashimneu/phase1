@@ -14,11 +14,11 @@ kM = 1.59e-9            #[(Newton*meter)/(rpm)^2]
 gamma = kM/kF           #[meter]
 
 # simulation parameters
-tf = 20
+tf = 4
 
 # position and velocity gains 
-Kd = [1,1,1]            
-Kp = [1,1,4]
+Kp = [0,50,0]
+Kd = [0,10,0]            
 
 # equillibrium input
 u0 = np.array([[m*g],[0]])
@@ -28,7 +28,7 @@ def xdot_2d(y,t,yd):
     # CONTROLLER 
     # position controller
     e = yd[0:6] - y
-    u1 = m*(g + yd[7] + Kd[1]*e[5] +Kp[1]*e[1])
+    u1 = m*(yd[7] + Kd[1]*e[4] +Kp[1]*e[1])
     theta_d = -1/g*(yd[6] + Kd[0]*e[3] + Kp[0]*e[0])
     # attitude controller
     u2 = Ixx*(yd[8] + Kd[2]*e[5] + Kp[2]*(theta_d - y[2]))# add theta_d 
@@ -53,13 +53,20 @@ x0 = [y0 ,z0, phi0, vy0, vz0, phi_dot_0]
 t = np.arange(start=0, stop=tf,step=0.05)
 
 # desired pose
-yd = [0,20,0,0,0,0,0,0,0]
+yd = [0,10,0,0,0,0,0,0,0]
 
 # solve ODE
 x = odeint(xdot_2d,x0,t,args=(yd,))
 
+# extract for plotting
+Y = np.array(x)[:,0]
+Z = np.array(x)[:,1]
+Theta = np.array(x)[:,2]
+
 # plot results
-plt.plot(t,x)
+plt.plot(t,Y,'r')
+plt.plot(t,Z,'b')
+plt.plot(t,Theta,'g')
 plt.xlabel(r'$t$')
 plt.ylabel(r'$x(t)$')
 plt.show()
