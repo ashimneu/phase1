@@ -14,11 +14,12 @@ kM = 1.59e-9            #[(Newton*meter)/(rpm)^2]
 gamma = kM/kF           #[meter]
 
 # simulation parameters
-tf = 4
+tf = 15
+tstep = 0.01
 
 # position and velocity gains 
-Kp = [0,50,0]
-Kd = [0,10,0]            
+Kp = [0.1,50,1e2]   #[0,50,0]
+Kd = [0.2,10,1e1]   #[0,10,0]     
 
 # equillibrium input
 u0 = np.array([[m*g],[0]])
@@ -43,17 +44,17 @@ def xdot_2d(y,t,yd):
 # initial condition
 y0 = 0
 z0 = 0
-phi0 = 0
+phi0 = 1.0
 vy0 = 0
 vz0 = 0
 phi_dot_0 = 0
 x0 = [y0 ,z0, phi0, vy0, vz0, phi_dot_0]
 
 # time points
-t = np.arange(start=0, stop=tf,step=0.05)
+t = np.arange(start=0, stop=tf,step=tstep)
 
 # desired pose
-yd = [0,10,0,0,0,0,0,0,0]
+yd = [0,0,0,0,0,0,0,0,0]
 
 # solve ODE
 x = odeint(xdot_2d,x0,t,args=(yd,))
