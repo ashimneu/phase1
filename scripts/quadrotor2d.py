@@ -4,19 +4,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 import rospy
-from phase1.msg import Pose
-from phase1.msg import Cmd
+from phase1.msg import Pose2d
+from phase1.msg import Cmd2d
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Point
 
 
-
-''' commentss.. '''
-
 class quadrotor():
     def __init__(self):
         rospy.init_node('quadrotor2d')
-        self.sub = rospy.Subscriber('phase1/controller', Cmd, self.controllerinput_callback())
+        self.sub = rospy.Subscriber('phase1/controller', Cmd2d, self.controllerinput_callback())
         self.quadrotor_publisher = rospy.Publisher('phase1/quadrotor2d', Pose, queue_size=100)
 
         self.g = 9.80665  # [meters/sec^2]
@@ -26,11 +23,14 @@ class quadrotor():
         self.Kd = [15,15,0.5]
         self.Kp = [0,0,0]
         self.yd = [5,15,0,0,0,0,0,0,0]
-        self.currentpose = np.zeros(6)
-        self.waypoint = Point()
-        self.initialpose = Twist()
-        self.desiredpose = Twist()
+        self.currentpose = [0,0,0,0,0,0]
+        self.waypoint = [0,0]
+        self.initialpose = [0,0,0,0,0,0]
+        self.t = 0
+        self.dt = 0.001
+        self.desiredpose = [5,15,0,0,0,0,0,0,0]
         self.controllerinput = np.array([[0],[0]])
+        self.stopsimulation = False
         self.rate = rospy.Rate(10)
 
 
@@ -38,31 +38,67 @@ class quadrotor():
         self.controllerinput[0] = command.u1
         self.controllerinput[1] = command.u2
 
-    def propagate_once(self):
-        def xdot_2d(y,t,yd):
-            # CONTROLLER
-            e = yd[0:6] - y
-            # position controller
-            u1 = m * (yd[7] + Kd[1] * e[4] + Kp[1] * e[1] + g)
-            theta_d = -1 / g * (yd[6] + Kd[0] * e[3] + Kp[0] * e[0])
-            # attitude controller
-            u2 = Ixx * (yd[8] + Kd[2] * e[5] + Kp[2] * (theta_d - y[2]))  # add theta_d
-            u = np.array([[u1], [u2]]) + u0
 
-            u0 = np.array([[m*g],[0]])
-            u = self.controllerinput + self.u0
 
+    def pose2array(config):
+        #converts ros twist data to numpy array
+        arr = np.zeros(6)
+        arr[0] = config.x
+        arr[1] = config.y
+        arr[2] = config.z
+        arr[3] = config.phi
+        arr[4] = config.theta
+        arr[5] = config.psi
+        return arr
+
+    def pose2list(config):
+        #converts ros twist data to numpy array
+        ls = np.zeros(6) #empty numpy array
+        ls[0] = config.x
+        ls[1] = config.y
+        ls[2] = config.z
+        ls[3] = config.phi
+        ls[4] = config.theta
+        ls[5] = config.psi
+        return ls
+
+    def list2pose(ls):
+        config = Pose2d()
+        config.y = ls[0]
+        config.z = ls[1]
+        config.phi = ls[2]
+        config.ydot = ls[3]
+        config.zdot = ls[4]
+        config.phidot = ls[5]
+
+    def simulation(self):
+        x0 = self.currentpose
+        t = self.t
+        m = self.m
+        g = self.g
+        Ixx = self.Ixx
+        u0 = np.array([[m * g], [0]])
+        yd = self.desiredpose # <------ (note to self) its location could change depending on nature of yd
+
+
+        def xdot_2d(y,t,yd,u):
             # CLOSED-LOOP DYNAMICS
             F = np.array([[y[3]], [y[4]], [y[5]], [0], [-g], [0]])
-            G = np.array(
-                [[0, 0], [0, 0], [0, 0], [(-1 / m) * np.sin(y[2]), 0], [(1 / m) * np.cos(y[2]), 0], [0, 1 / Ixx]])
+            G = np.array([[0,0], [0,0], [0,0], [(-1/m)*np.sin(y[2]),0], [(1/m) * np.cos(y[2]),0], [0,1/Ixx]])
             return np.squeeze(F + np.matmul(G,u)).tolist()
 
-        x = odeint(xdot_2d, x0, t, args=(yd,))
+        while (not self.stopsimulation):
+            # <--------------- (note to self) yd could be placed here too!
+            u = self.controllerinput + u0
+            x = odeint(xdot_2d, x0, t, args=(yd, u))
+            self.t = self.t + self.dt
+            self.currentpose = x
+            self.publishcurrentpose()
 
 
-
-        
+    def publishcurrentpose(self):
+        currentpose = self.list2pose(self.currentpose)
+        self.quadrotor_publisher.publish(currentpose)
 
    
 '''    while not rospy.is_shutdown():

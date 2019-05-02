@@ -27,7 +27,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   Pose.msg
+   Pose2d.msg
+   Cmd2d.msg
  )
 
 ## Generate services in the 'srv' folder

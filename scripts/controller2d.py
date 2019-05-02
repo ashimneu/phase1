@@ -65,7 +65,7 @@ class controller():
         yd = self.yd
         while True:
             y = self.currentpose
-            e = yd - y
+            e = yd[0:6] - y
             u1 = self.m * (yd[7] + Kd[1] * e[4] + Kp[1] * e[1] + g)
             phid = -1 / self.g * (yd[6] + Kd[0] * e[3] + Kp[0] * e[0])
             u2 = self.Ixx * (yd[8] + Kd[2] * e[5] + Kp[2] * (phid - y[2]))
