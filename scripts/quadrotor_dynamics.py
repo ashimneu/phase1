@@ -12,23 +12,24 @@ Izz = 2.89e-5           #[kilogram*meters^2]
 kF = 6.11e-8            #[Newton/(rpm)^2]
 kM = 1.59e-9            #[(Newton*meter)/(rpm)^2]
 gamma = kM/kF           #[meter]
+M = inv(np.array([[1, 1, 1, 1],[0,l,0,-l],[-l,0,l,0],[gamma,-gamma,gamma,gamma]]))
 
 # simulation parameters
-tf = 10
+tf = 1
 tstep = 0.005
 t = np.arange(start=0, stop=tf,step=tstep)
 
 # position and velocity gains 
-Kp = [1.1,50,1e2]   #[0,50,0]
-Kd = [1.8,10,1e1]   #[0,10,0]     
+Kp = [0,50,1e3]   #[0,50,0]
+Kd = [0,10,1e2]   #[0,10,0]     
 
 # equillibrium input
 u0 = np.array([[m*g],[0]])
 
 # initial condition
-y0 = -5
+y0 = 0
 z0 = 0
-phi0 = 0.0
+phi0 = 1.04
 vy0 = 0
 vz0 = 0
 phi_dot_0 = 0
@@ -52,7 +53,12 @@ def xdot_2d(y,t,yd):
     F = np.array([[y[3]], [y[4]], [y[5]],[0],[-g],[0]])
     G = np.array([[0, 0], [0, 0],[0 ,0],[-1/m*np.sin(y[2]), 0], [1/m*np.cos(y[2]), 0], [0,1/Ixx]])
 
-    return np.squeeze(F + G@u).tolist() # update to python 2.7
+    return np.squeeze(F + G@u).tolist()  # update to python 2.7
+
+
+# ADD LOGIC TO EXTRACT FORCES/MOMENTS FROM MODEL
+
+# UPDATE ODEINT USAGE TO REFLECT ROS WRAP
 
 # solve ODE
 x = odeint(xdot_2d,x0,t,args=(yd,))
@@ -63,7 +69,7 @@ Z = np.array(x)[:,1]
 Theta = np.array(x)[:,2]
 
 # plot results
-plt.plot(t,Y,'r')
+#plt.plot(t,Y,'r')
 plt.plot(t,Z,'b')
 plt.plot(t,Theta,'g')
 plt.xlabel(r'$t$')
