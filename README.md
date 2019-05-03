@@ -22,15 +22,18 @@ First phase of EE 245 Advanced Robotics project. The goal is to derive and imple
   
 # Notes
 ## 3D quadrotor dynamics & controller design
+- The following were obtained from the Coursera Robotics Flight Course section on [3D control](https://www.coursera.org/learn/robotics-flight/lecture/zpCD1/3-d-quadrotor-control)
 - We desire that the quadrotor tracks a desired trajectory with zero error:
-$(\ddot{r}_d(t) -\ddot{r}) + K_de_v + K_pe_p = 0$
+$(\ddot{r}_d(t) -\ddot{r}_c) + K_de_v + K_pe_p = 0 \quad (1)$
 - where our control authority over the propellers allows us to command the quadrotor's acceleration $\ddot{r}(t)$.
-- we obtain feedback on the position $r(t)$ and velocity $\dot{r}(t)$.
-- a cascading controller design follows:
+- we obtain feedback on the position $r(t)$ and velocity $\dot{r}(t)$ and from (1) can design a cascading  position $\rightarrow$ attitude controller:
 - $\phi_c = \frac{1}{g}(\ddot{x}_c \sin{\psi}_{des} - \ddot{y}_c \cos{\psi}_{des})\\
 \theta_c =\frac{1}{g}(\ddot{x}_c \cos{\psi}_{des} + \ddot{y}_c \sin{\psi}_{des})\\
 \psi_c = \psi_{des}\\
-u_1 = m(g+\ddot{z}_c)\\
+u_1 = m(g+\ddot{z}_c)
+$
+where $\ddot{x}_c, \ddot{y}_c$, and $\ddot{z}_c$ are obtained from (1), which completes the position controller. The attitude controller follows as
+$
 u_2 = \left[\begin{array}{c}
         k_{p,\phi}(\phi_c - \phi) + k_{d,\phi}(p_c - p)\\
         k_{p,\theta}(\theta_c - \theta) + k_{d,\theta}(q_c - q)\\
@@ -59,5 +62,7 @@ $\left[
         \dot{\theta}\\
         \dot{\psi}
     \end{array}
-\right]
+\right] \quad (2)
 $
+- **Q:** How are the commanded body-frame angular rates $p_c,q_c,r_c$ obtained?
+    - Can we re-use the transform (2)?
