@@ -20,3 +20,44 @@ First phase of EE 245 Advanced Robotics project. The goal is to derive and imple
 - [] Decide on how to loop integration continuously
     
   
+# Notes
+## 3D quadrotor dynamics & controller design
+- We desire that the quadrotor tracks a desired trajectory with zero error:
+$(\ddot{r}_d(t) -\ddot{r}) + K_de_v + K_pe_p = 0$
+- where our control authority over the propellers allows us to command the quadrotor's acceleration $\ddot{r}(t)$.
+- we obtain feedback on the position $r(t)$ and velocity $\dot{r}(t)$.
+- a cascading controller design follows:
+- $\phi_c = \frac{1}{g}(\ddot{x}_c \sin{\psi}_{des} - \ddot{y}_c \cos{\psi}_{des})\\
+\theta_c =\frac{1}{g}(\ddot{x}_c \cos{\psi}_{des} + \ddot{y}_c \sin{\psi}_{des})\\
+\psi_c = \psi_{des}\\
+u_1 = m(g+\ddot{z}_c)\\
+u_2 = \left[\begin{array}{c}
+        k_{p,\phi}(\phi_c - \phi) + k_{d,\phi}(p_c - p)\\
+        k_{p,\theta}(\theta_c - \theta) + k_{d,\theta}(q_c - q)\\
+        k_{p,\psi}(\psi_c - \psi) + k_{d,\psi}(r_c - r) 
+    \end{array}\right]
+$
+where the angular rates in the body frame are related to the world frame rates by
+$\left[
+    \begin{array}{c}
+        p\\
+        q\\
+        r
+    \end{array}
+\right]
+=
+\left[
+    \begin{array}{ccc}
+        c_{\theta} & 0 & -c_{\phi}s_{\theta}\\
+        0 & 1 & s_{\phi} \\
+        s_{\theta} & 0 & c_{\phi}c_{\theta}
+    \end{array}
+\right]
+\left[
+    \begin{array}{c}
+        \dot{\phi}\\
+        \dot{\theta}\\
+        \dot{\psi}
+    \end{array}
+\right]
+$
