@@ -32,7 +32,7 @@ $(\ddot{r}_d(t) -\ddot{r}_c) + K_de_v + K_pe_p = 0 \quad (1)$
 \psi_c = \psi_{des}\\
 u_1 = m(g+\ddot{z}_c)
 $
-where $\ddot{x}_c, \ddot{y}_c$, and $\ddot{z}_c$ are obtained from (1), which completes the position controller. The attitude controller follows as
+where $\ddot{x}_c, \ddot{y}_c$, and $\ddot{z}_c$ are obtained from $(1)$, which completes the position controller. The attitude controller follows as
 $
 u_2 = \left[\begin{array}{c}
         k_{p,\phi}(\phi_c - \phi) + k_{d,\phi}(p_c - p)\\
@@ -65,4 +65,4 @@ $\left[
 \right] \quad (2)
 $
 - **Q:** How are the commanded body-frame angular rates $p_c,q_c,r_c$ obtained?
-    - Can we re-use the transform (2)?
+    - Can we re-use the transform $(2)$, and if so, how are the commanded euler rates obtained?
