@@ -1,6 +1,6 @@
 <launch>
   
-  <node name="controller" pkg="phase1" type="controller.py" />
-  <node name="quadrotor" pkg="phase1" type="quadrotor.py" />
+  <node name="controller2d" pkg="phase1" type="controller2d.py" />
+  <node name="quadrotor2d" pkg="phase1" type="quadrotor2d.py" />
   
 </launch>
