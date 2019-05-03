@@ -12,7 +12,7 @@ Izz = 2.89e-5           #[kilogram*meters^2]
 kF = 6.11e-8            #[Newton/(rpm)^2]
 kM = 1.59e-9            #[(Newton*meter)/(rpm)^2]
 gamma = kM/kF           #[meter]
-M = inv(np.array([[1, 1, 1, 1],[0,l,0,-l],[-l,0,l,0],[gamma,-gamma,gamma,gamma]]))
+M = np.linalg.inv(np.array([[1, 1, 1, 1],[0,l,0,-l],[-l,0,l,0],[gamma,-gamma,gamma,gamma]]))
 
 # simulation parameters
 tf = 1
@@ -33,10 +33,10 @@ phi0 = 1.04
 vy0 = 0
 vz0 = 0
 phi_dot_0 = 0
-x0 = [y0 ,z0, phi0, vy0, vz0, phi_dot_0]
+x0 = np.asarray([y0 ,z0, phi0, vy0, vz0, phi_dot_0])
 
 # desired pose
-yd = [0,0,0,0,0,0,0,0,0]
+yd = np.asarray([0,0,0,0,0,0,0,0,0])
 
 # dynamics & control of planar quadrotor
 def xdot_2d(y,t,yd):
@@ -53,8 +53,7 @@ def xdot_2d(y,t,yd):
     F = np.array([[y[3]], [y[4]], [y[5]],[0],[-g],[0]])
     G = np.array([[0, 0], [0, 0],[0 ,0],[-1/m*np.sin(y[2]), 0], [1/m*np.cos(y[2]), 0], [0,1/Ixx]])
 
-    return np.squeeze(F + G@u).tolist()  # update to python 2.7
-
+    return np.squeeze(F + G@u)  #UPDATE TO lowered version
 
 # ADD LOGIC TO EXTRACT FORCES/MOMENTS FROM MODEL
 
