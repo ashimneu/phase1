@@ -21,8 +21,43 @@ First phase of EE 245 Advanced Robotics project. The goal is to derive and imple
     
   
 # Notes
-## 3D quadrotor dynamics & controller design
+# 3D Quadrotor
 - The following were obtained from the Coursera Robotics Flight Course section on [3D control](https://www.coursera.org/learn/robotics-flight/lecture/zpCD1/3-d-quadrotor-control)
+## Dynamics 
+- The linear dynamics of the quadrotor are define in the non-inertial frame i.e. the world frame by Newton's 2nd Law:
+
+$m \mathbf{\ddot{r}} =\left[\begin{array}{c}
+        0\\
+        0\\
+        -mg
+    \end{array}\right] + R \left[
+        \begin{array}{c}
+            0\\
+            0\\
+            u_1
+        \end{array}
+    \right]$
+- the rotational dynamics in the body frame are given by 
+$I \dot{\left[\begin{array}{c}
+        p\\
+        q\\
+        r
+    \end{array}\right]} -\mathbf{u_2} - \left[
+        \begin{array}{c}
+            p\\
+            q\\
+            r
+        \end{array}
+    \right] \times 
+    I\left[
+        \begin{array}{c}
+            p\\
+            q\\
+            r
+        \end{array}
+    \right]
+$
+## Controller Design
 - We desire that the quadrotor tracks a desired trajectory with zero error:
 $(\ddot{r}_d(t) -\ddot{r}_c) + K_de_v + K_pe_p = 0 \quad (1)$
 - where our control authority over the propellers allows us to command the quadrotor's acceleration $\ddot{r}(t)$.
@@ -66,3 +101,5 @@ $\left[
 $
 - **Q:** How are the commanded body-frame angular rates $p_c,q_c,r_c$ obtained?
     - Can we re-use the transform $(2)$, and if so, how are the commanded euler rates obtained?
+    - From Vijay's lecture, it is pointed out that in the vicinity of the hover condition (operating point ~ linear regime), the euler rates and body angular rates are almost equivalent: $\dot{\phi} \approx p,\dot{\theta} \approx q,\dot{\psi} \approx r$
+    - furthermore, the commanded body angular rates can be obtained by from $(2)$ with inputs being the commanded euler angles and their *time-derivatives* 
