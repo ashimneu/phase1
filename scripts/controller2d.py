@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 import time
-import numpy as np
 import rospy
-from phase1.msg import Pose
-from phase1.msg import Cmd
-#from geometry_msgs.msg import Twist
-from geometry_msgs.msg import Point
-
+import numpy as np
+from phase1.msg import Pose2d
+from phase1.msg import Cmd2d
 
 
 
@@ -18,16 +15,16 @@ class controller():
         self.m = 0.030  # [kilograms]
         self.l = 0.046  # [meters]
         self.Ixx = 1.43e-5  # [kilogram*meters^2]
-        self.Kd = [15,15,0.5]
-        self.Kp = [0,0,0]
-        self.yd = [5,15,0,0,0,0,0,0,0]
-        self.currentpose = np.zeros(6)
-        self.waypoint = Point()
-        self.initialpose = Pose()
-        self.desiredpose = Pose()
-        self.controllerinput = cmd()
-        self.controller_publisher = rospy.Publisher('phase1/controller', Cmd, queue_size=100)
-        self.controller_subscriber = rospy.Subscriber('phase1/quadrotor2d', Pose, self.currentpose_callback)
+        self.Kd = np.array([15,15,0.5])
+        self.Kp = np.array([0,0,0])
+        self.yd = np.array([5,15,0,0,0,0,0,0,0])
+        self.currentpose = np.array([0,0,0,0,0,0])
+        self.waypoint = np.array([0,0])
+        self.initialpose = np.array([0,0,0,0,0,0])
+        self.desiredpose = np.array([5,15,0,0,0,0,0,0,0])
+        self.controllerinput = Cmd2d()
+        self.controller_publisher = rospy.Publisher('phase1/controller', Cmd2d, queue_size=10)
+        self.controller_subscriber = rospy.Subscriber('phase1/quadrotor2d', Pose2d, self.currentpose_callback)
         self.rate = rospy.Rate(10)
 
     def currentpose_callback(self,config):
@@ -37,18 +34,18 @@ class controller():
     def getdistance(self,goalpose):
         return np.linalg.norm(self.currentpose-goalpose)
 
-    def pose2array(config):
-        #converts ros twist data to numpy array
+    def pose2nparray(self, config):
+        #converts Pose2d data to numpy array
         a = np.zeros(6) #empty numpy array
-        a[0] = config.x
-        a[1] = config.y
-        a[2] = config.z
-        a[3] = config.phi
-        a[4] = config.theta
-        a[5] = config.psi
+        a[0] = config.y
+        a[1] = config.z
+        a[2] = config.phi
+        a[3] = config.ydot
+        a[4] = config.zdot
+        a[5] = config.phidot
         return a
 
-    '''def twist2nparray(vel):
+    def Twist2nparray(self, vel):
         #converts ros twist data to numpy array
         a = np.zeros(6) #empty numpy array
         a[0] = vel.linear.x
@@ -58,15 +55,17 @@ class controller():
         a[4] = vel.angular.y
         a[5] = vel.angular.z
         return a
-        '''
 
-    def publisher(self,goalpose):
-        Kd = self.kd
+
+
+    def start(self):
+        Kd = self.Kd
+        Kp = self.Kp
         yd = self.yd
-        while True:
+        while (not rospy.is_shutdown):
             y = self.currentpose
             e = yd[0:6] - y
-            u1 = self.m * (yd[7] + Kd[1] * e[4] + Kp[1] * e[1] + g)
+            u1 = self.m * (yd[7] + Kd[1] * e[4] + Kp[1] * e[1])
             phid = -1 / self.g * (yd[6] + Kd[0] * e[3] + Kp[0] * e[0])
             u2 = self.Ixx * (yd[8] + Kd[2] * e[5] + Kp[2] * (phid - y[2]))
             self.controllerinput.u1 = u1
@@ -85,6 +84,7 @@ class controller():
 if __name__ == '__main__':
     try:
         Controller1 = controller()
+        Controller1.start()
 
     except rospy.ROSInterruptException:
             pass

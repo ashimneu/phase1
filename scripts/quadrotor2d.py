@@ -1,46 +1,50 @@
 #!/usr/bin/env python
 import time
+import rospy
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
-import rospy
 from phase1.msg import Pose2d
 from phase1.msg import Cmd2d
-from geometry_msgs.msg import Twist
-from geometry_msgs.msg import Point
+
 
 
 class quadrotor():
     def __init__(self):
         rospy.init_node('quadrotor2d')
-        self.sub = rospy.Subscriber('phase1/controller', Cmd2d, self.controllerinput_callback())
-        self.quadrotor_publisher = rospy.Publisher('phase1/quadrotor2d', Pose, queue_size=100)
+        self.sub = rospy.Subscriber('phase1/controller', Cmd2d, self.controllerinput_callback)
+        self.quadrotor_publisher = rospy.Publisher('phase1/quadrotor2d', Pose2d, queue_size=100)
 
         self.g = 9.80665  # [meters/sec^2]
         self.m = 0.030  # [kilograms]
         self.l = 0.046  # [meters]
         self.Ixx = 1.43e-5  # [kilogram*meters^2]
-        self.Kd = [15,15,0.5]
-        self.Kp = [0,0,0]
-        self.yd = [5,15,0,0,0,0,0,0,0]
-        self.currentpose = [0,0,0,0,0,0]
-        self.waypoint = [0,0]
-        self.initialpose = [0,0,0,0,0,0]
-        self.t = 0
-        self.dt = 0.001
-        self.desiredpose = [5,15,0,0,0,0,0,0,0]
+        self.Kd = np.array([15.0,15.0,0.5])
+        self.Kp = np.array([0.0,0.0,0.0])
+        self.yd = np.array([5,15,0,0,0,0,0,0,0])
+        self.currentpose = np.zeros(6).tolist()
+        self.waypoint = np.array([0.0,0.0])
+        self.initialpose = np.array([0.0,0.0,0.0,0.0,0.0,0.0])
+        self.desiredpose = np.array([5.0,15.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0])
+
+        tf = 0.005
+        tstep = 0.005
+        t = np.arange(start=0, stop=tf, step=tstep)
+        self.t = t
+
+        self.dt = 0.005
         self.controllerinput = np.array([[0],[0]])
-        self.stopsimulation = False
         self.rate = rospy.Rate(10)
 
 
     def controllerinput_callback(self,command):
+        print("A command input has been received.")
         self.controllerinput[0] = command.u1
         self.controllerinput[1] = command.u2
 
 
 
-    def pose2array(config):
+    def pose2nparray(config):
         #converts ros twist data to numpy array
         arr = np.zeros(6)
         arr[0] = config.x
@@ -62,7 +66,7 @@ class quadrotor():
         ls[5] = config.psi
         return ls
 
-    def list2pose(ls):
+    def list2pose(self, ls):
         config = Pose2d()
         config.y = ls[0]
         config.z = ls[1]
@@ -70,8 +74,9 @@ class quadrotor():
         config.ydot = ls[3]
         config.zdot = ls[4]
         config.phidot = ls[5]
+        return config
 
-    def simulation(self):
+    def start(self):
         x0 = self.currentpose
         t = self.t
         m = self.m
@@ -87,10 +92,10 @@ class quadrotor():
             G = np.array([[0,0], [0,0], [0,0], [(-1/m)*np.sin(y[2]),0], [(1/m) * np.cos(y[2]),0], [0,1/Ixx]])
             return np.squeeze(F + np.matmul(G,u)).tolist()
 
-        while (not self.stopsimulation):
-            # <--------------- (note to self) yd could be placed here too!
+        while (not rospy.is_shutdown()):
             u = self.controllerinput + u0
             x = odeint(xdot_2d, x0, t, args=(yd, u))
+            x = np.squeeze(x).tolist()  # convert nested list x to single list x
             self.t = self.t + self.dt
             self.currentpose = x
             self.publishcurrentpose()
@@ -107,7 +112,9 @@ class quadrotor():
 
 if __name__ == '__main__':
     try:
-        Quad = quadrotor()
+        Robot = quadrotor()
+        Robot.start()
+
 
     except rospy.ROSInterruptException:
             pass
