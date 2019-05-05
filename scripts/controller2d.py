@@ -28,6 +28,7 @@ class controller():
         self.rate = rospy.Rate(10)
 
     def currentpose_callback(self,config):
+        print('inside currentpose_callback')
         self.currentpose = self.pose2nparray(config)
 
 
@@ -62,16 +63,19 @@ class controller():
         Kd = self.Kd
         Kp = self.Kp
         yd = self.yd
-        while (not rospy.is_shutdown):
+        while (not rospy.is_shutdown()):
             y = self.currentpose
             e = yd[0:6] - y
             u1 = self.m * (yd[7] + Kd[1] * e[4] + Kp[1] * e[1])
             phid = -1 / self.g * (yd[6] + Kd[0] * e[3] + Kp[0] * e[0])
             u2 = self.Ixx * (yd[8] + Kd[2] * e[5] + Kp[2] * (phid - y[2]))
+            print('type u1 = ',type(u1))
             self.controllerinput.u1 = u1
             self.controllerinput.u2 = u2
             self.controller_publisher.publish(self.controllerinput)
-            self.rate.sleep()
+            #self.rate.sleep()
+
+        rospy.spin()
    
     
 '''    while not rospy.is_shutdown():

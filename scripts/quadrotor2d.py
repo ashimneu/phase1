@@ -86,6 +86,7 @@ class quadrotor():
         yd = self.desiredpose # <------ (note to self) its location could change depending on nature of yd
 
 
+
         def xdot_2d(y,t,yd,u):
             # CLOSED-LOOP DYNAMICS
             F = np.array([[y[3]], [y[4]], [y[5]], [0], [-g], [0]])
@@ -100,10 +101,15 @@ class quadrotor():
             self.currentpose = x
             self.publishcurrentpose()
 
+        rospy.spin()
+
+
 
     def publishcurrentpose(self):
+        print('inside publishcurrentpose ')
         currentpose = self.list2pose(self.currentpose)
         self.quadrotor_publisher.publish(currentpose)
+        return
 
    
 '''    while not rospy.is_shutdown():
