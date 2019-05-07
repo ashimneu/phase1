@@ -28,7 +28,7 @@ class controller():
         self.rate = rospy.Rate(10)
 
     def currentpose_callback(self,config):
-        print('inside currentpose_callback')
+        print()
         self.currentpose = self.pose2nparray(config)
 
 

@@ -82,7 +82,7 @@ class quadrotor():
         m = self.m
         g = self.g
         Ixx = self.Ixx
-        u0 = np.array([[m * g], [0]])
+        u0 = np.array([[m*g], [0]])
         yd = self.desiredpose # <------ (note to self) its location could change depending on nature of yd
 
 

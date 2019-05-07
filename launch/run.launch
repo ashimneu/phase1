@@ -1,6 +1,9 @@
 <launch>
+  <param name="use_sim_time" value="true"/>
+  <node pkg="rostopic" type="rostopic" name="arbitrary_name" args="pub -s -r 1000 /clock rosgraph_msgs/Clock 'now' " output="screen"/>
   
-  <node name="controller2d" pkg="phase1" type="controller2d.py" />
-  <node name="quadrotor2d" pkg="phase1" type="quadrotor2d.py" />
+
+  <!-- <node name="controller2d" pkg="phase1" type="controller2d.py" />
+  <node name="quadrotor2d" pkg="phase1" type="quadrotor2d.py" /> -->
   
 </launch>
