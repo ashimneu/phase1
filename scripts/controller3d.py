@@ -39,7 +39,6 @@ class controller():
         self.xd = np.array(qd + qd_dot + qd_ddot)
 
 
-
         self.currentpose = np.array([0,0,0,0,0,0])
         self.waypoint = np.array([0,0])
         self.initialpose = np.array([0,0,0,0,0,0])

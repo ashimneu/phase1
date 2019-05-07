@@ -6,15 +6,17 @@ import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 from phase1.msg import Pose2d
 from phase1.msg import Cmd2d
+from rosgraph_msgs.msg import Clock
 
 
 
 class quadrotor():
     def __init__(self):
         rospy.init_node('quadrotor2d')
-        self.sub = rospy.Subscriber('phase1/controller', Cmd2d, self.controllerinput_callback)
-        self.quadrotor_publisher = rospy.Publisher('phase1/quadrotor2d', Pose2d, queue_size=100)
-
+        self.input_subscriber = rospy.Subscriber('controller', Cmd2d, self.controllerinput_callback)
+        self.quadrotor_publisher = rospy.Publisher('quadrotor', Pose2d, queue_size=100)
+        self.clock_subscriber = rospy.Subscriber('/clock', Clock, self.clock_callback)
+        self.rate = rospy.Rate(1)
         self.g = 9.80665  # [meters/sec^2]
         self.m = 0.030  # [kilograms]
         self.l = 0.046  # [meters]
@@ -23,24 +25,33 @@ class quadrotor():
         self.Kp = np.array([0.0,0.0,0.0])
         self.yd = np.array([5,15,0,0,0,0,0,0,0])
         self.currentpose = np.zeros(6).tolist()
-        self.waypoint = np.array([0.0,0.0])
         self.initialpose = np.array([0.0,0.0,0.0,0.0,0.0,0.0])
         self.desiredpose = np.array([5.0,15.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0])
-
-        tf = 0.005
-        tstep = 0.005
-        t = np.arange(start=0, stop=tf, step=tstep)
-        self.t = t
-
-        self.dt = 0.005
+        self.waypoint = np.array([0.0,0.0])
         self.controllerinput = np.array([[0],[0]])
-        self.rate = rospy.Rate(10)
+        self.time_new = 0.0 # time at current step
+        self.time_old = 0.0 # time at previous step
+        self.t = 0.0 # time lapse since clock_start
+        self.got_new_timelapse = False # second time lapse update yet?
+        self.got_new_input = False
 
+
+    def clock_callback(self,clock_time):
+        #print('type(clock_time) =  ', type(clock_time.clock.to_sec()) )
+        print('Quad: New clock msg received.')
+        time_new = clock_time.clock.to_sec()# float data type
+        if (self.time_old == 0.0):
+            self.time_old = time_new
+        else:
+            self.t = self.t + (time_new - self.time_old) # make a time lapse update
+            self.time_new = time_new
+            self.got_new_timelapse = True
 
     def controllerinput_callback(self,command):
-        print("A command input has been received.")
+        print("Quad: New input cmd received.")
         self.controllerinput[0] = command.u1
         self.controllerinput[1] = command.u2
+        self.got_new_input = True
 
 
 
@@ -66,6 +77,17 @@ class quadrotor():
         ls[5] = config.psi
         return ls
 
+    def Twist2nparray(self, vel):
+        #converts ros twist data to numpy array
+        a = np.zeros(6) #empty numpy array
+        a[0] = vel.linear.x
+        a[1] = vel.linear.y
+        a[2] = vel.linear.z
+        a[3] = vel.angular.x
+        a[4] = vel.angular.y
+        a[5] = vel.angular.z
+        return a
+
     def list2pose(self, ls):
         config = Pose2d()
         config.y = ls[0]
@@ -77,15 +99,13 @@ class quadrotor():
         return config
 
     def start(self):
+
         x0 = self.currentpose
-        t = self.t
         m = self.m
         g = self.g
         Ixx = self.Ixx
         u0 = np.array([[m*g], [0]])
-        yd = self.desiredpose # <------ (note to self) its location could change depending on nature of yd
-
-
+        yd = self.desiredpose # <------ (note: location of yd might change
 
         def xdot_2d(y,t,yd,u):
             # CLOSED-LOOP DYNAMICS
@@ -94,19 +114,23 @@ class quadrotor():
             return np.squeeze(F + np.matmul(G,u)).tolist()
 
         while (not rospy.is_shutdown()):
-            u = self.controllerinput + u0
-            x = odeint(xdot_2d, x0, t, args=(yd, u))
-            x = np.squeeze(x).tolist()  # convert nested list x to single list x
-            self.t = self.t + self.dt
-            self.currentpose = x
-            self.publishcurrentpose()
+            if self.got_new_timelapse and self.got_new_input:
+                #print('time lapse = ', np.round(self.t,4))
+                print('Quad: Inside if statement')
+                u = self.controllerinput + u0
+                x = odeint(xdot_2d, x0, [np.round(self.t,4)], args=(yd, u))
+                x = np.squeeze(x).tolist()  # converts nested list to single list
+                self.currentpose = x
+                print('currentpose= ', self.currentpose)
+                self.time_old = self.time_new
+                self.publishcurrentpose()
+            self.rate.sleep()
 
-        rospy.spin()
+        #rospy.spin()
 
 
 
     def publishcurrentpose(self):
-        print('inside publishcurrentpose ')
         currentpose = self.list2pose(self.currentpose)
         self.quadrotor_publisher.publish(currentpose)
         return
