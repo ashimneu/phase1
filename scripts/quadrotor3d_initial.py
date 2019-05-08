@@ -24,37 +24,37 @@ Iinv = np.array([[1/Ixx, 0.0, 0.0],[0.0, 1/Iyy, 0.0],[0.0, 0.0, 1/Izz]])
 
 # position and velocity gains 
 Kp = {
-    'x': 0.0,
-    'y': 0.0,
+    'x': 2e1,
+    'y': 2.2e1,
     'z': 1e2,
-    'phi': 1.0,
-    'theta': 1.0,
+    'phi': 5e0,
+    'theta': 1e2,
     'psi': 0.0
 }   
 Kd = {
-    'x_dot': 0.0,
-    'y_dot': 0.0,
+    'x_dot': 3e1,
+    'y_dot': 3.8e1,
     'z_dot': 15,
-    'phi_dot': 0.1,
-    'theta_dot': 0.1,
+    'phi_dot': 2e0,
+    'theta_dot': 1e1,
     'psi_dot': 0.0
 } 
 
 # simulation parameters
-tf = 5
-tstep = 0.01
+tf = 10
+tstep = 0.1
 t = np.arange(start=0, stop=tf,step=tstep)
 
 # equillibrium input
 u0 = np.array([[m*g],[0],[0],[0]])
 
 # initial pose
-q0 = [0.0, 0.0, 0.0, np.pi/180*0.0, np.pi/180*0.0, np.pi/180*0.0]
+q0 = [0.0, 0.0, 0.0, np.pi/180*30.0, np.pi/180*60.0, np.pi/180*0.0]
 q0_dot = [0]*6
 x0 = np.array(q0 + q0_dot)
 
 # desired pose
-qd = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+qd = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 qd_dot = [0]*6
 qd_ddot = [0]*6
 xd = np.array(qd + qd_dot + qd_ddot)
@@ -78,9 +78,9 @@ def xdot_3d(x,t,xd):
     p_c = 0.0   # as per [1]
     q_c = 0.0   
     r_c = 0.0   
-    u2 = np.array([Kp['phi']*(phi_c - x[3]) + Kd['phi_dot']*(p_c - p),
+    u2 = np.array([Kp['phi']*(phi_c - x[3]) +     Kd['phi_dot']*(p_c - p),
                    Kp['theta']*(theta_c - x[4]) + Kd['theta_dot']*(q_c - q),
-                   Kp['psi']*(psi_c - x[5]) + Kd['psi_dot']*(r_c - r)])
+                   Kp['psi']*(psi_c - x[5]) +     Kd['psi_dot']*(r_c - r)])
 
     # CLOSED-LOOP DYNAMICS
     r_dot = x[6:9]
@@ -94,8 +94,8 @@ def world2body_vel(euler,omega_dot_w):
     # euler = [phi, theta, psi] the roll, pitch, and yaw angles in world frame
     # euler_dot = [phi_dot theta_dot psi_dot] world frame angular velocities
     T = np.array([[np.cos(euler[1]) , 0.0 , -np.cos(euler[0])*np.sin(euler[1])],
-        [0.0, 1, np.sin(euler[0])],
-        [np.sin(euler[1]), 0.0, np.cos(euler[0]*np.cos(euler[1]))]])
+                  [0.0, 1, np.sin(euler[0])],
+                  [np.sin(euler[1]), 0.0, np.cos(euler[0]*np.cos(euler[1]))]])
     return T@omega_dot_w
 
 def body2world_vel(euler,omega_b):
@@ -107,9 +107,9 @@ def body2world_vel(euler,omega_b):
 
 def Rot(euler):
     # rotation matrix from body to world frame 
-    R = np.array([[np.cos(euler[1])*np.cos(euler[2]), np.cos(euler[2])*np.sin(euler[0])*np.sin(euler[1]), np.cos(euler[0])*np.sin(euler[1])*np.cos(euler[2]) + np.sin(euler[2])*np.sin(euler[0])],
-                 [np.cos(euler[1])*np.sin(euler[2]), np.sin(euler[2])*np.sin(euler[0])*np.sin(euler[1]) + np.cos(euler[2])*np.cos(euler[2]), np.cos(euler[0])*np.sin(euler[1])*np.sin(euler[2]) - np.sin(euler[1])*np.cos(euler[2])],
-                 [-np.sin(euler[1]), np.sin(euler[0])*np.cos(euler[1]), np.cos(euler[0])*np.cos(euler[1])]])
+    R = np.array([[np.cos(euler[1])*np.cos(euler[2]) - np.sin(euler[0])*np.sin(euler[1])*np.sin(euler[2]), -np.cos(euler[0])*np.sin(euler[2]), np.cos(euler[2])*np.sin(euler[1]) + np.cos(euler[2])*np.sin(euler[0])*np.sin(euler[2])],
+                 [np.cos(euler[1])*np.sin(euler[2]) + np.cos(euler[1])*np.sin(euler[1])*np.sin(euler[0]), np.cos(euler[0])*np.cos(euler[2]), np.sin(euler[1])*np.sin(euler[2]) - np.cos(euler[2])*np.cos(euler[1])*np.sin(euler[0])],
+                 [-np.cos(euler[0])*np.sin(euler[1]), np.sin(euler[0]), np.cos(euler[0])*np.cos(euler[1])]])
     return R
 
 # solve ODE
@@ -119,6 +119,9 @@ x = odeint(xdot_3d,x0,t,args=(xd,))
 X = np.array(x)[:,0]
 Y = np.array(x)[:,1]
 Z = np.array(x)[:,2]
+Phi = np.array(x)[:,3]
+Theta = np.array(x)[:,4]
+Psi = np.array(x)[:,5]
 
 # plot results
 #fig = plt.figure()
@@ -127,7 +130,11 @@ Z = np.array(x)[:,2]
 #plt.xlabel(r'$x(t)$')
 #plt.ylabel(r'$y(t)$')
 #plt.zlabel(r'$z(t)$')
-plt.plot(t,Z,'g')
-plt.plot(t,X,'b')
-plt.plot(t,Y,'r')
+#plt.plot(t,Z,'g')
+#plt.plot(t,X,'b')
+#plt.plot(t,Y,'r')
+plt.plot(t,Phi,'w')
+plt.plot(t,Theta,'c')
+#plt.plot(t,Psi,'y')
+#plt.grid()
 plt.show()
