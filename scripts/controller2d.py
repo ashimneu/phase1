@@ -11,7 +11,7 @@ class controller():
     
     def __init__(self):
         rospy.init_node('controller2d')
-        self.controller_publisher = rospy.Publisher('controller', Cmd2d, queue_size=10)
+        self.controller_publisher = rospy.Publisher('controller', Cmd2d, queue_size=10, latch = True)
         self.controller_subscriber = rospy.Subscriber('quadrotor', Pose2d, self.currentpose_callback)
         self.clock_subscriber = rospy.Subscriber('/clock', Clock, self.clock_callback)
         self.rate = rospy.Rate(1)
@@ -37,8 +37,9 @@ class controller():
 
     def clock_callback(self,clock_time):
         #print('type(clock_time) =  ', type(clock_time.clock.to_sec()) )
-        print('Controller: New clock msg received.')
+        #print('Controller: New clock msg received.')
         time_new = clock_time.clock.to_sec() # float data type
+        print('Controller: New clock msg received: ', np.round(time_new, 2))
         if (self.time_old == 0.0):
             self.time_old = time_new
         else:
@@ -84,6 +85,7 @@ class controller():
                 self.time_old = self.time_new
                 self.got_new_pose = False
                 self.controller_publisher.publish(self.controllerinput)
+                print('Controller: A cmd is published.')
             self.rate.sleep()
 
         #rospy.spin()
