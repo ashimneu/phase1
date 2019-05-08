@@ -12,6 +12,7 @@ First phase of EE 245 Advanced Robotics project. The goal is to derive and imple
     - []solve for $F_1,F_2,F_3,F_4$
 - [x] Plot $y,z,\phi$
 ### 3D
+- [] Derive the commanded euler angle accelerations $ \phi_c,\theta_c,\psi_c$ and use to solve for $\textbf{u}_2$
 - [] Extend to 3d as per [Coursera Lecture](https://www.coursera.org/learn/robotics-flight/lecture/zpCD1/3-d-quadrotor-control)
 ### ROS
 - [] Decide on topic names and message types
