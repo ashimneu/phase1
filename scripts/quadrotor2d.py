@@ -14,7 +14,7 @@ class quadrotor():
     def __init__(self):
         rospy.init_node('quadrotor2d')
         self.input_subscriber = rospy.Subscriber('controller', Cmd2d, self.controllerinput_callback)
-        self.quadrotor_publisher = rospy.Publisher('quadrotor', Pose2d, queue_size=100)
+        self.quadrotor_publisher = rospy.Publisher('quadrotor', Pose2d, queue_size=10, latch = True)
         self.clock_subscriber = rospy.Subscriber('/clock', Clock, self.clock_callback)
         self.rate = rospy.Rate(1)
         self.g = 9.80665  # [meters/sec^2]
@@ -38,8 +38,9 @@ class quadrotor():
 
     def clock_callback(self,clock_time):
         #print('type(clock_time) =  ', type(clock_time.clock.to_sec()) )
-        print('Quad: New clock msg received.')
+        #print('Quad: New clock msg received.')
         time_new = clock_time.clock.to_sec()# float data type
+        print('Quad: New clock msg received: ', np.round(time_new,2))
         if (self.time_old == 0.0):
             self.time_old = time_new
         else:
@@ -116,12 +117,12 @@ class quadrotor():
         while (not rospy.is_shutdown()):
             if self.got_new_timelapse and self.got_new_input:
                 #print('time lapse = ', np.round(self.t,4))
-                print('Quad: Inside if statement')
+                #print('Quad: Inside if statement')
                 u = self.controllerinput + u0
                 x = odeint(xdot_2d, x0, [np.round(self.t,4)], args=(yd, u))
                 x = np.squeeze(x).tolist()  # converts nested list to single list
                 self.currentpose = x
-                print('currentpose= ', self.currentpose)
+                #print('currentpose= ', self.currentpose)
                 self.time_old = self.time_new
                 self.publishcurrentpose()
             self.rate.sleep()
