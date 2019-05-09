@@ -16,7 +16,7 @@ class quadrotor():
         self.input_subscriber = rospy.Subscriber('controller', Cmd2d, self.controllerinput_callback)
         self.quadrotor_publisher = rospy.Publisher('quadrotor', Pose2d, queue_size=10, latch = True)
         self.clock_subscriber = rospy.Subscriber('/clock', Clock, self.clock_callback)
-        self.rate = rospy.Rate(1)
+        self.rate = rospy.Rate(10)
         self.g = 9.80665  # [meters/sec^2]
         self.m = 0.030  # [kilograms]
         self.l = 0.046  # [meters]
@@ -24,15 +24,15 @@ class quadrotor():
         self.Kd = np.array([15.0,15.0,0.5])
         self.Kp = np.array([0.0,0.0,0.0])
         self.yd = np.array([5,15,0,0,0,0,0,0,0])
-        self.currentpose = np.zeros(6).tolist()
-        self.initialpose = np.array([0.0,0.0,0.0,0.0,0.0,0.0])
-        self.desiredpose = np.array([5.0,15.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0])
+        self.initialpose = np.asarray([5.0,5.0,0,0.0,0.0,0.0])
+        self.currentpose = self.initialpose
+        self.desiredpose = np.array([15,15,0,0,0,0,0,0,0])
         self.waypoint = np.array([0.0,0.0])
-        self.controllerinput = np.array([[0],[0]])
-        self.time_new = 0.0 # time at current step
-        self.time_old = 0.0 # time at previous step
+        self.controllerinput = np.asarray([[0],[0]])
+        self.time_new = 0.0 # clock time at current step
+        self.time_old = 0.0 # clock time at previous step
         self.t = 0.0 # time lapse since clock_start
-        self.got_new_timelapse = False # second time lapse update yet?
+        self.got_timelapse_updated = False # second time lapse update yet?
         self.got_new_input = False
 
 
@@ -46,7 +46,7 @@ class quadrotor():
         else:
             self.t = self.t + (time_new - self.time_old) # make a time lapse update
             self.time_new = time_new
-            self.got_new_timelapse = True
+            self.got_timelapse_updated = True
 
     def controllerinput_callback(self,command):
         print("Quad: New input cmd received.")
@@ -111,11 +111,11 @@ class quadrotor():
         def xdot_2d(y,t,yd,u):
             # CLOSED-LOOP DYNAMICS
             F = np.array([[y[3]], [y[4]], [y[5]], [0], [-g], [0]])
-            G = np.array([[0,0], [0,0], [0,0], [(-1/m)*np.sin(y[2]),0], [(1/m) * np.cos(y[2]),0], [0,1/Ixx]])
+            G = np.array([[0,0], [0,0], [0,0], [(-1/m)*np.sin(y[2]),0], [(1/m)*np.cos(y[2]),0], [0,1/Ixx]])
             return np.squeeze(F + np.matmul(G,u)).tolist()
 
         while (not rospy.is_shutdown()):
-            if self.got_new_timelapse and self.got_new_input:
+            if self.got_timelapse_updated and self.got_new_input:
                 #print('time lapse = ', np.round(self.t,4))
                 #print('Quad: Inside if statement')
                 u = self.controllerinput + u0
@@ -124,6 +124,8 @@ class quadrotor():
                 self.currentpose = x
                 #print('currentpose= ', self.currentpose)
                 self.time_old = self.time_new
+                self.got_new_input = False
+                self.got_timelapse_updated = False
                 self.publishcurrentpose()
             self.rate.sleep()
 

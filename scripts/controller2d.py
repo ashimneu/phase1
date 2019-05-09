@@ -14,21 +14,21 @@ class controller():
         self.controller_publisher = rospy.Publisher('controller', Cmd2d, queue_size=10, latch = True)
         self.controller_subscriber = rospy.Subscriber('quadrotor', Pose2d, self.currentpose_callback)
         self.clock_subscriber = rospy.Subscriber('/clock', Clock, self.clock_callback)
-        self.rate = rospy.Rate(1)
+        self.rate = rospy.Rate(10)
         self.g = 9.80665  # [meters/sec^2]
         self.m = 0.030  # [kilograms]
         self.l = 0.046  # [meters]
         self.Ixx = 1.43e-5  # [kilogram*meters^2]
-        self.Kd = np.array([15,15,0.5])
-        self.Kp = np.array([0,0,0])
+        self.Kd = np.array([0.1,0.1,0.0])
+        self.Kp = np.array([10,10,0])
         self.yd = np.array([5,15,0,0,0,0,0,0,0])
-        self.currentpose = np.array([0,0,0,0,0,0])
-        self.initialpose = np.array([0,0,0,0,0,0])
-        self.desiredpose = np.array([5,15,0,0,0,0,0,0,0])
+        self.initialpose = np.asarray([5.0,5.0,0,0.0,0.0,0.0])
+        self.currentpose = self.initialpose
+        self.desiredpose = np.array([15,15,0,0,0,0,0,0,0])
         self.waypoint = np.array([0,0])
         self.controllerinput = Cmd2d()
-        self.time_new = 0.0 # time at current step
-        self.time_old = 0.0 # time at previous step
+        self.time_new = 0.0 # clock time at current step
+        self.time_old = 0.0 # clock time at previous step
         self.t = 0.0 # time lapse since clock_start
         self.got_new_pose = True
         #self.got_new_clock_msg = True
@@ -74,12 +74,14 @@ class controller():
         while (not rospy.is_shutdown()):
             #time = rospy.get_time()
             if (self.got_new_pose):
-                print('inside if statement')
+                #print('inside if statement')
                 y = self.currentpose
                 e = yd[0:6] - y
+                # position controller
                 u1 = self.m * (yd[7] + Kd[1] * e[4] + Kp[1] * e[1])
                 phid = -1 / self.g * (yd[6] + Kd[0] * e[3] + Kp[0] * e[0])
-                u2 = self.Ixx * (yd[8] + Kd[2] * e[5] + Kp[2] * (phid - y[2]))
+                # attitude controller
+                u2 = self.Ixx * (yd[8] + Kd[2]*e[5] + Kp[2]*(phid - y[2]))
                 self.controllerinput.u1 = u1
                 self.controllerinput.u2 = u2
                 self.time_old = self.time_new
