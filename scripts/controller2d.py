@@ -22,7 +22,7 @@ class controller():
         self.Kd = np.array([0.1,0.1,0.0])
         self.Kp = np.array([10,10,0])
         self.yd = np.array([5,15,0,0,0,0,0,0,0])
-        self.initialpose = np.asarray([5.0,5.0,0,0.0,0.0,0.0])
+        self.initialpose = np.asarray([5.0,5.0,np.pi/8,0.0,0.0,0.0])
         self.currentpose = self.initialpose
         self.desiredpose = np.array([15,15,0,0,0,0,0,0,0])
         self.waypoint = np.array([0,0])
@@ -92,11 +92,6 @@ class controller():
 
         #rospy.spin()
    
-    
-'''    while not rospy.is_shutdown():
-        rospy.spin()'''
-
-
 
 if __name__ == '__main__':
     try:

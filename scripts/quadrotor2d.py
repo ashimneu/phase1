@@ -24,7 +24,7 @@ class quadrotor():
         self.Kd = np.array([15.0,15.0,0.5])
         self.Kp = np.array([0.0,0.0,0.0])
         self.yd = np.array([5,15,0,0,0,0,0,0,0])
-        self.initialpose = np.asarray([5.0,5.0,0,0.0,0.0,0.0])
+        self.initialpose = np.asarray([5.0,5.0,np.pi/8,0.0,0.0,0.0])
         self.currentpose = self.initialpose
         self.desiredpose = np.array([15,15,0,0,0,0,0,0,0])
         self.waypoint = np.array([0.0,0.0])
@@ -32,6 +32,7 @@ class quadrotor():
         self.time_new = 0.0 # clock time at current step
         self.time_old = 0.0 # clock time at previous step
         self.t = 0.0 # time lapse since clock_start
+        self.dt = 0.1
         self.got_timelapse_updated = False # second time lapse update yet?
         self.got_new_input = False
 
@@ -119,8 +120,9 @@ class quadrotor():
                 #print('time lapse = ', np.round(self.t,4))
                 #print('Quad: Inside if statement')
                 u = self.controllerinput + u0
-                x = odeint(xdot_2d, x0, [np.round(self.t,4)], args=(yd, u))
-                x = np.squeeze(x).tolist()  # converts nested list to single list
+                x = odeint(xdot_2d, x0, [self.t, self.t + self.dt], args=(yd, u))
+                q = x[1,:]
+                x = np.squeeze(q).tolist()  # converts nested list to single list
                 self.currentpose = x
                 #print('currentpose= ', self.currentpose)
                 self.time_old = self.time_new
@@ -128,7 +130,6 @@ class quadrotor():
                 self.got_timelapse_updated = False
                 self.publishcurrentpose()
             self.rate.sleep()
-
         #rospy.spin()
 
 
