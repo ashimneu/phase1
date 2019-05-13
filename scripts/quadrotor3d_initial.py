@@ -22,39 +22,41 @@ M = np.linalg.inv(np.array([[1, 1, 1, 1],[0,l,0,-l],[-l,0,l,0],[gamma,-gamma,gam
 I  = np.array([[Ixx, 0.0, 0.0],[0.0, Iyy, 0.0],[0.0, 0.0, Izz]])
 Iinv = np.array([[1/Ixx, 0.0, 0.0],[0.0, 1/Iyy, 0.0],[0.0, 0.0, 1/Izz]])
 
+Ku = 10
+Tu = 12
 # position and velocity gains 
 Kp = {
-    'x': 2e1,
-    'y': 2.2e1,
+    'x': 0.8*Ku,
+    'y': 0.8*Ku,
     'z': 1e2,
     'phi': 5e0,
-    'theta': 1e2,
+    'theta': 5e0,
     'psi': 0.0
 }   
 Kd = {
-    'x_dot': 3e1,
-    'y_dot': 3.8e1,
+    'x_dot': 0.1*Ku*Tu,
+    'y_dot': 0.1*Ku*Tu,
     'z_dot': 15,
     'phi_dot': 2e0,
-    'theta_dot': 1e1,
+    'theta_dot': 2e0,
     'psi_dot': 0.0
 } 
 
 # simulation parameters
-tf = 10
-tstep = 0.1
+tf = 30
+tstep = 0.07
 t = np.arange(start=0, stop=tf,step=tstep)
 
 # equillibrium input
 u0 = np.array([[m*g],[0],[0],[0]])
 
 # initial pose
-q0 = [0.0, 0.0, 0.0, np.pi/180*30.0, np.pi/180*60.0, np.pi/180*0.0]
+q0 = [0.0, 0.0, 0.0, np.pi/180*0.0, np.pi/180*0.0, np.pi/180*0.0]
 q0_dot = [0]*6
 x0 = np.array(q0 + q0_dot)
 
 # desired pose
-qd = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+qd = [2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
 qd_dot = [0]*6
 qd_ddot = [0]*6
 xd = np.array(qd + qd_dot + qd_ddot)
@@ -130,11 +132,11 @@ Psi = np.array(x)[:,5]
 #plt.xlabel(r'$x(t)$')
 #plt.ylabel(r'$y(t)$')
 #plt.zlabel(r'$z(t)$')
-#plt.plot(t,Z,'g')
-#plt.plot(t,X,'b')
-#plt.plot(t,Y,'r')
-plt.plot(t,Phi,'w')
-plt.plot(t,Theta,'c')
+plt.plot(t,Z,'g')
+plt.plot(t,X,'b')
+plt.plot(t,Y,'r')
+#plt.plot(t,Phi,'w')
+#plt.plot(t,Theta,'c')
 #plt.plot(t,Psi,'y')
-#plt.grid()
+plt.grid(linestyle='--', linewidth='0.5', color='white')
 plt.show()

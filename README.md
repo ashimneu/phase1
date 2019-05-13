@@ -8,17 +8,23 @@ First phase of EE 245 Advanced Robotics project. The goal is to derive and imple
 - [x] Propagate dynamics in Python
     - assume test inputs $u_1, u_2$ 
 - [x] Find stabilizing linear feedback controller
-    - [x]apply on $u_1,u_2$
-    - []solve for $F_1,F_2,F_3,F_4$
+    - [x] apply on $u_1,u_2$
+    - [ ] solve for $F_1,F_2,F_3,F_4$
 - [x] Plot $y,z,\phi$
 ### 3D
-- [] Derive the commanded euler angle accelerations $ \phi_c,\theta_c,\psi_c$ and use to solve for $\textbf{u}_2$
-- [] Extend to 3d as per [Coursera Lecture](https://www.coursera.org/learn/robotics-flight/lecture/zpCD1/3-d-quadrotor-control)
+- [x] Derive the commanded euler angle accelerations $ \phi_c,\theta_c,\psi_c$ and use to solve for $\textbf{u}_2$
+- [x] Extend to 3d as per [Coursera Lecture](https://www.coursera.org/learn/robotics-flight/lecture/zpCD1/3-d-quadrotor-control)
+- [ ] add functions for linear and non-linear
+- [ ] define constraint matrices $Q$,$R$ using knowledge of the state(input)-variables and the linear envelope
+- [ ] create python design script for LQR using [python-control](https://python-control.readthedocs.io/en/0.8.2/generated/control.lqr.html) and theory from [here](https://kth.instructure.com/courses/4962/pages/module2-mtrl-control)
+- [ ] 
+
 ### ROS
-- [] Decide on topic names and message types
-    - [] Confirm ROS interfaces for CrazyFly (topics,messages, services, etc.)
-- [] Decide on how user inputs desired pose/trajectory
-- [] Decide on how to loop integration continuously
+- [ ] Decide on topic names and message types
+    - [ ] Confirm ROS interfaces for CrazyFly (topics,messages, services, etc.)
+- [ ] Decide on how user inputs desired pose/trajectory
+- [ ] Decide on how to loop integration continuously
+- [ ] validate the `rate.sleep()` technique of managing time vs `/clock`
     
   
 # Notes
