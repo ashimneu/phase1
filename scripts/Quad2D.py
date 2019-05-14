@@ -19,8 +19,8 @@ class Quad2D():
         self.m = 0.030  # [kilograms]
         self.l = 0.046  # [meters]
         self.Ixx = 1.43e-5  # [kilogram*meters^2]
-        self.Kd = np.array([15.0,15.0,0.5])
-        self.Kp = np.array([0.0,0.0,0.0])
+        self.Kp = np.array([1,50,1200])
+        self.Kd = np.array([[1.5,10,150])
         self.yd = np.array([5,15,0,0,0,0,0,0,0])
         self.initialpose = np.asarray([5.0,5.0,np.pi/8,0.0,0.0,0.0])
         self.currentpose = self.initialpose
@@ -36,7 +36,9 @@ class Quad2D():
         self.pose_trajectory = None
         self.A = np.array([[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1],[0,0,-g,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]])   #linearized system matrix
         self.B = = np.array([[0,0],[0,0],[0,0],[0,0],[1/m,0],[0,1/Ixx]])    #linearized input matrix
-
+    Ku = 1500
+Kp = [1,50,0.8*1500]   #[20,50,1e3] 
+Kd = [1.5,10,Kp[2]/8]      #[Kp[0]/3,10,1e2]   
 
     def xdot_2d(self,y,t,yd,u0,m,g,Ixx,Kp,Kd):
 

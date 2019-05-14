@@ -48,8 +48,8 @@ tstep = 0.07
 t = np.arange(start=0, stop=tf,step=tstep)
 
 # linearized system matrices
-A = np.array([[],[],[],[],[],[]])
-B = np.array([[],[],[],[],[],[]])
+A = np.array([[],[],[],[],[],[],[],[],[],[],[],[]])
+B = np.array([[],[],[],[],[],[],[],[],[],[],[],[]])
 
 # equillibrium input
 u0 = np.array([[m*g],[0],[0],[0]])
