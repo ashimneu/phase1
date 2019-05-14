@@ -34,6 +34,8 @@ class Quad2D():
         self.got_timelapse_updated = False # second time lapse update yet?
         self.got_new_input = False
         self.pose_trajectory = None
+        self.A = np.array([[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1],[0,0,-g,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]])   #linearized system matrix
+        self.B = = np.array([[0,0],[0,0],[0,0],[0,0],[1/m,0],[0,1/Ixx]])    #linearized input matrix
 
 
     def xdot_2d(self,y,t,yd,u0,m,g,Ixx,Kp,Kd):
@@ -47,9 +49,9 @@ class Quad2D():
         u2 = Ixx * (yd[8] + Kd[2] * e[5] + Kp[2] * (theta_d - y[2]))  # add theta_d
         u = np.array([[u1], [u2]]) + u0
         # CLOSED-LOOP DYNAMICS
-        F = np.array([[y[3]], [y[4]], [y[5]], [0], [-self.g], [0]])
-        G = np.array([[0,0], [0,0], [0,0], [(-1/m)*np.sin(y[2]),0], [(1/m)*np.cos(y[2]),0], [0,1/self.Ixx]])
-        return np.squeeze(F + np.matmul(G,u)).tolist()
+        #F = np.array([[y[3]], [y[4]], [y[5]], [0], [-self.g], [0]])
+        #G = np.array([[0,0], [0,0], [0,0], [(-1/m)*np.sin(y[2]),0], [(1/m)*np.cos(y[2]),0], [0,1/self.Ixx]])
+        return np.squeeze(np.matmul(self.A,y) + np.matmul(self.B,u)).tolist()
 
     def start(self):
         x0 = self.currentpose
