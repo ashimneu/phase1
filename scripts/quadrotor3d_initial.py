@@ -55,12 +55,13 @@ B = np.array([[],[],[],[],[],[],[],[],[],[],[],[]])
 u0 = np.array([[m*g],[0],[0],[0]])
 
 # initial pose
-q0 = [0.0, 0.0, 0.0, np.pi/180*0.0, np.pi/180*0.0, np.pi/180*0.0]
+#q0 = [0.0, 0.0, 0.0, np.pi/180*0.0, np.pi/180*0.0, np.pi/180*0.0]
+q0 = [0,0,0,0,0,0]
 q0_dot = [0]*6
 x0 = np.array(q0 + q0_dot)
 
 # desired pose
-qd = [2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+qd = [0, 0, 5.0, 0.0, 0.0, 0.0]
 qd_dot = [0]*6
 qd_ddot = [0]*6
 xd = np.array(qd + qd_dot + qd_ddot)
@@ -145,9 +146,9 @@ plt.plot(t,Y,'r')
 plt.grid(linestyle='--', linewidth='0.5', color='white')
 plt.show()
 
-
+'''
 self.A = np.array([[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1],[0,0,-g,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]])   #linearized system matrix
         self.B = = np.array([[0,0],[0,0],[0,0],[0,0],[1/m,0],[0,1/Ixx]])    #linearized input matrix
 #F = np.array([[y[3]], [y[4]], [y[5]], [0], [-self.g], [0]])
         #G = np.array([[0,0], [0,0], [0,0], [(-1/m)*np.sin(y[2]),0], [(1/m)*np.cos(y[2]),0], [0,1/self.Ixx]])
-        return np.squeeze(np.matmul(self.A,y) + np.matmul(self.B,u)).tolist()
+        return np.squeeze(np.matmul(self.A,y) + np.matmul(self.B,u)).tolist()'''

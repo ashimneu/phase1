@@ -21,15 +21,17 @@ class Quad2D():
         self.Ixx = 1.43e-5  # [kilogram*meters^2]
         self.Kp = np.array([1,50,1200])
         self.Kd = np.array([1.5,12,self.Kp[2]/8])
-        self.Ku = 1500
         self.yd = np.array([5,15,0,0,0,0,0,0,0])
+        self.A = np.array([[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1],[0,0,-self.g,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]])   #linearized system matrix
+        self.B = np.array([[0,0],[0,0],[0,0],[0,0],[1/self.m,0],[0,1/self.Ixx]])    #linearized input matrix
         self.initialpose = np.asarray([5.0,5.0,np.pi/8,0.0,0.0,0.0])
         self.currentpose = self.initialpose
         self.desiredpose = np.array([15,15,0,0,0,0,0,0,0])
+        self.start_time = None
+        self.end_time = None
         self.dt = 0.1
+        self.pose_trajectory = None
         self.time_trajectory = None
-        self.A = np.array([[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1],[0,0,-self.g,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]])   #linearized system matrix
-        self.B = np.array([[0,0],[0,0],[0,0],[0,0],[1/self.m,0],[0,1/self.Ixx]])    #linearized input matrix
 
     def xdot_2d(self,y,t,yd,u0,m,g,Ixx,Kp,Kd):
         # CONTROLLER
@@ -69,7 +71,7 @@ class Quad2D():
         return
 
 
-def fly_quad2d(ip,tkh,hl,ht):
+def launch_quad2d(ip,tkh,hl,ht):
     # ip -initial pose, tkh -takeoff height, hl -hover location, ht -hover time
     Robot = Quad2D()
     dt = 0.005
@@ -152,8 +154,7 @@ def fly_quad2d(ip,tkh,hl,ht):
 
 if __name__ == '__main__':
     try:
-        #fly_quad2d([0,0,0],5,[5,15],3)
-        fly_quad2d([0, 0, 0], 5, [5, 15], 3)
+        launch_quad2d([0, 0, 0], 5, [5, 15], 3)
 
 
     except rospy.ROSInterruptException:
