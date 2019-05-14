@@ -33,6 +33,7 @@ class Quad2D():
         self.dt = 0.1
         self.got_timelapse_updated = False # second time lapse update yet?
         self.got_new_input = False
+        self.pose_trajectory = None
 
 
     def xdot_2d(self,y,t,yd,u0,m,g,Ixx,Kp,Kd):
@@ -64,29 +65,53 @@ class Quad2D():
 
         #print('time lapse = ', np.round(self.t,4))
         #print('Quad: Inside if statement')
-        x = odeint(self.xdot_2d, x0, [self.t, self.t + self.dt], args=(yd,u0,self.m,self.g,self.Ixx,self.Kp,self.Kd))
-        #q = x[1,:]
-        x = np.squeeze(x).tolist()  # converts nested list to single list
-        #self.currentpose = x[end,:]
-        #print('currentpose= ', self.currentpose)
-        #self.time_old = self.time_new
-        #self.got_new_input = False
-        #self.got_timelapse_updated = False
-        #self.publishcurrentpose()
+        x = odeint(self.xdot_2d, x0, t, args=(yd,u0,self.m,self.g,self.Ixx,self.Kp,self.Kd))
+
+
+        print('dim(x)', x.shape)
 
         # extract for plotting
-        Y = np.array(x)[:, 0]
-        Z = np.array(x)[:, 1]
-        Theta = np.array(x)[:, 2]
+        # extract for plotting
+        Y = np.array(x)[:,0]
+        Z = np.array(x)[:,1]
+        Theta = np.array(x)[:,2]
 
         # plot results
-        # plt.plot(t,Y,'r')
-        #plt.plot(t, Z, 'b')
-        #plt.plot(t, Theta, 'g')
-        #plt.xlabel(r'$t$')
-        #plt.ylabel(r'$x(t)$')
-        #plt.show()
+        plt.subplot(2,2,1)
+        plt.plot(Y,Z,'b')
+        plt.xlabel(r'$y(t)$')
+        plt.ylabel(r'$z(t)$')
+        plt.xlim(-10,10)
+        plt.ylim(-1,20)
+        plt.grid(True)
 
+        plt.subplot(2,2,2)
+        plt.plot(t,Y,'b')
+        plt.xlabel(r'$t$')
+        plt.ylabel(r'$y(t)$')
+        plt.xlim(-1,15)
+        plt.ylim(-5,15)
+        plt.grid(True)
+
+        plt.subplot(2,2,3)
+        plt.plot(t,Z,'b')
+        plt.xlabel(r'$t$')
+        plt.ylabel(r'$z(t)$')
+        plt.xlim(-1,15)
+        plt.ylim(-5,15)
+        plt.grid(True)
+
+        plt.subplot(2,2,4)
+        plt.plot(t,Theta,'b')
+        plt.xlabel(r'$t$')
+        plt.ylabel(r'$\phi$')
+        plt.xlim(-1,15)
+        plt.ylim(-4,4)
+        plt.grid(True)
+        #figManager = plt.get_current_fig_manager()
+        #figManager.window.showMaximized()
+        #figManager.window.state('zoomed')
+        plt.show()
 
 
 if __name__ == '__main__':
