@@ -20,28 +20,18 @@ class Quad2D():
         self.l = 0.046  # [meters]
         self.Ixx = 1.43e-5  # [kilogram*meters^2]
         self.Kp = np.array([1,50,1200])
-        self.Kd = np.array([[1.5,10,150])
+        self.Kd = np.array([1.5,12,self.Kp[2]/8])
+        self.Ku = 1500
         self.yd = np.array([5,15,0,0,0,0,0,0,0])
         self.initialpose = np.asarray([5.0,5.0,np.pi/8,0.0,0.0,0.0])
         self.currentpose = self.initialpose
         self.desiredpose = np.array([15,15,0,0,0,0,0,0,0])
-        self.waypoint = np.array([0.0,0.0])
-        self.controllerinput = np.asarray([[0],[0]])
-        self.time_new = 0.0 # clock time at current step
-        self.time_old = 0.0 # clock time at previous step
-        self.t = 0.0 # time lapse since clock_start
         self.dt = 0.1
-        self.got_timelapse_updated = False # second time lapse update yet?
-        self.got_new_input = False
-        self.pose_trajectory = None
-        self.A = np.array([[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1],[0,0,-g,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]])   #linearized system matrix
-        self.B = = np.array([[0,0],[0,0],[0,0],[0,0],[1/m,0],[0,1/Ixx]])    #linearized input matrix
-    Ku = 1500
-Kp = [1,50,0.8*1500]   #[20,50,1e3] 
-Kd = [1.5,10,Kp[2]/8]      #[Kp[0]/3,10,1e2]   
+        self.time_trajectory = None
+        self.A = np.array([[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1],[0,0,-self.g,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]])   #linearized system matrix
+        self.B = np.array([[0,0],[0,0],[0,0],[0,0],[1/self.m,0],[0,1/self.Ixx]])    #linearized input matrix
 
     def xdot_2d(self,y,t,yd,u0,m,g,Ixx,Kp,Kd):
-
         # CONTROLLER
         e = yd[0:6] - y
         # position controller
@@ -53,75 +43,117 @@ Kd = [1.5,10,Kp[2]/8]      #[Kp[0]/3,10,1e2]
         # CLOSED-LOOP DYNAMICS
         #F = np.array([[y[3]], [y[4]], [y[5]], [0], [-self.g], [0]])
         #G = np.array([[0,0], [0,0], [0,0], [(-1/m)*np.sin(y[2]),0], [(1/m)*np.cos(y[2]),0], [0,1/self.Ixx]])
-        return np.squeeze(np.matmul(self.A,y) + np.matmul(self.B,u)).tolist()
+        return np.squeeze(np.matmul(self.A,y.reshape(6,1)) + np.matmul(self.B,u)).tolist()
 
-    def start(self):
+    def simulate(self):
         x0 = self.currentpose
         u0 = np.array([[self.m * self.g], [0]])
         yd = self.desiredpose
         m = self.m
 
         # simulation parameters
-        tf = 1
-        tstep = 0.005
-        t = np.arange(start=0, stop=tf, step=tstep)
-
-
-        #print('time lapse = ', np.round(self.t,4))
-        #print('Quad: Inside if statement')
+        ts = self.start_time
+        tf = self.end_time
+        tstep = self.dt
+        t = np.arange(start=ts, stop=tf, step=tstep)
         x = odeint(self.xdot_2d, x0, t, args=(yd,u0,self.m,self.g,self.Ixx,self.Kp,self.Kd))
+        self.pose_trajectory= x
+        self.time_trajectory = t
+
+    def run_once(self,currentpose,desiredpose,start_time,end_time):
+        self.currentpose = currentpose
+        self.desiredpose = desiredpose
+        self.start_time = start_time
+        self.end_time = end_time
+        self.simulate()
+        return
 
 
-        print('dim(x)', x.shape)
+def fly_quad2d(ip,tkh,hl,ht):
+    # ip -initial pose, tkh -takeoff height, hl -hover location, ht -hover time
+    Robot = Quad2D()
+    dt = 0.005
+    cp1 = np.asarray([ip[0], ip[1], ip[2], 0.0, 0.0, 0.0])
+    dp1 = np.array([0, tkh, 0, 0, 0, 0, 0, 0, 0])
+    t0 = 0
+    t1 = 5
+    Robot.run_once(cp1, dp1, t0, t0 + t1)
+    trajectory_1 = Robot.pose_trajectory
+    time_1 = Robot.time_trajectory
 
-        # extract for plotting
-        # extract for plotting
-        Y = np.array(x)[:,0]
-        Z = np.array(x)[:,1]
-        Theta = np.array(x)[:,2]
+    # fly from takeoff 2 hover pose
+    cp2 = trajectory_1[-1, 0:6]
+    dp2 = np.array([hl[0], hl[1], 0, 0, 0, 0, 0, 0, 0])
+    t2 = 5
+    Robot.run_once(cp2, dp2, t1 + dt, t1 + t2)
+    trajectory_2 = Robot.pose_trajectory
+    time_2 = Robot.time_trajectory
 
-        # plot results
-        plt.subplot(2,2,1)
-        plt.plot(Y,Z,'b')
-        plt.xlabel(r'$y(t)$')
-        plt.ylabel(r'$z(t)$')
-        plt.xlim(-10,10)
-        plt.ylim(-1,20)
-        plt.grid(True)
+    # Hover for some time
+    cp3 = trajectory_2[-1, 0:6]
+    dp3 = np.array([hl[0], hl[0], 0, 0, 0, 0, 0, 0, 0])
+    t3 = ht
+    Robot.run_once(cp3, dp3, t2 + dt, t2 + t3)
 
-        plt.subplot(2,2,2)
-        plt.plot(t,Y,'b')
-        plt.xlabel(r'$t$')
-        plt.ylabel(r'$y(t)$')
-        plt.xlim(-1,15)
-        plt.ylim(-5,15)
-        plt.grid(True)
+    trajectory_3 = Robot.pose_trajectory
+    time_3 = Robot.time_trajectory
 
-        plt.subplot(2,2,3)
-        plt.plot(t,Z,'b')
-        plt.xlabel(r'$t$')
-        plt.ylabel(r'$z(t)$')
-        plt.xlim(-1,15)
-        plt.ylim(-5,15)
-        plt.grid(True)
+    # Land from Hover pose
+    cp4 = trajectory_3[-1, 0:6]
+    dp4 = np.array([hl[0], 0, 0, 0, 0, 0, 0, 0, 0])
+    t4 = 5
+    Robot.run_once(cp4, dp4, t3 + dt, t3 + t4)
 
-        plt.subplot(2,2,4)
-        plt.plot(t,Theta,'b')
-        plt.xlabel(r'$t$')
-        plt.ylabel(r'$\phi$')
-        plt.xlim(-1,15)
-        plt.ylim(-4,4)
-        plt.grid(True)
-        #figManager = plt.get_current_fig_manager()
-        #figManager.window.showMaximized()
-        #figManager.window.state('zoomed')
-        plt.show()
+    trajectory_4 = Robot.pose_trajectory
+    time_4 = Robot.time_trajectory
+
+    x = np.concatenate((trajectory_1, trajectory_2, trajectory_3, trajectory_4), axis=0)
+    t = np.concatenate((time_1, time_2, time_3, time_4), axis=0)
+
+    # extract for plotting
+    Y = np.array(x)[:, 0]
+    Z = np.array(x)[:, 1]
+    Theta = np.array(x)[:, 2]
+
+    # plot results
+    #plt.subplot(2, 2, 1)
+    plt.plot(Y, Z, 'b')
+    plt.xlabel(r'$y(t)$')
+    plt.ylabel(r'$z(t)$')
+    plt.xlim(-10, 10)
+    plt.ylim(-1, 20)
+    plt.grid(True)
+
+    '''plt.subplot(2, 2, 2)
+    plt.plot(t, Y, 'b')
+    plt.xlabel(r'$t$')
+    plt.ylabel(r'$y(t)$')
+    plt.xlim(-1, 15)
+    plt.ylim(-5, 15)
+    plt.grid(True)
+
+    plt.subplot(2, 2, 3)
+    plt.plot(t, Z, 'b')
+    plt.xlabel(r'$t$')
+    plt.ylabel(r'$z(t)$')
+    plt.xlim(-1, 15)
+    plt.ylim(-5, 15)
+    plt.grid(True)
+
+    plt.subplot(2, 2, 4)
+    plt.plot(t, Theta, 'b')
+    plt.xlabel(r'$t$')
+    plt.ylabel(r'$\phi$')
+    plt.xlim(-1, 15)
+    plt.ylim(-4, 4)
+    plt.grid(True)'''
+    plt.show()
 
 
 if __name__ == '__main__':
     try:
-        Robot = Quad2D()
-        Robot.start()
+        #fly_quad2d([0,0,0],5,[5,15],3)
+        fly_quad2d([0, 0, 0], 5, [5, 15], 3)
 
 
     except rospy.ROSInterruptException:
