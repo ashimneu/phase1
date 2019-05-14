@@ -28,7 +28,7 @@ Iinv = np.array([[1/Ixx, 0.0, 0.0],[0.0, 1/Iyy, 0.0],[0.0, 0.0, 1/Izz]])
 
 
 # simulation parameters
-tf = 5
+tf = 1
 tstep = 0.01
 t = np.arange(start=0, stop=tf,step=tstep)
 
@@ -38,7 +38,7 @@ a = np.array([
         [g*np.sin(np.pi/4),-g*np.cos(np.pi/4),0],
         [0,0,0]])
 A1 = np.hstack((np.zeros((3,6)),np.eye(3,3),np.zeros((3,3))))
-A2 = np.hstack((np.zeros((3,3)),np.eye(3,3),np.zeros((3,6))))
+A2 = np.hstack((np.zeros((3,9)),np.eye(3,3)))
 A3 = np.hstack((np.zeros((3,3)),a,np.zeros((3,6))))
 A4 = np.zeros((3,12))
 
@@ -54,19 +54,19 @@ Ku = 0
 Tu = 0
 # position and velocity gains 
 Kp = {
-    'x': 0,
+    'x': 1e1,
     'y': 0,
     'z': 1e2,
-    'phi': 1e-1,
-    'theta': 1e-1,
+    'phi': 5e0,
+    'theta': 5e0,
     'psi': 0.0
 }   
 Kd = {
-    'x_dot': 0e0,
+    'x_dot': 1e-2,
     'y_dot': 0e2,
     'z_dot': 1e1,
-    'phi_dot': 1e-2,
-    'theta_dot': 1e-2,
+    'phi_dot': 1e-4,
+    'theta_dot': 1e-4,
     'psi_dot': 0.0
 } 
 # Ku = 10
@@ -93,12 +93,12 @@ Kd = {
 u0 = np.array([[m*g],[0],[0],[0]])
 
 # initial pose
-q0 = [0.0, 1.0, 0.0, np.pi/180*0.0, np.pi/180*10.0, np.pi/180*0.0]
+q0 = [0.0, 0.0, 0.0, np.pi/180*0.0, np.pi/180*0.0, np.pi/180*0.0]
 q0_dot = [0]*6
 x0 = np.array(q0 + q0_dot)
 
 # desired pose
-qd = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+qd = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 qd_dot = [0]*6
 qd_ddot = [0]*6
 xd = np.array(qd + qd_dot + qd_ddot)
@@ -180,7 +180,7 @@ Psi = np.array(x)[:,5]
 #plt.xlabel(r'$x(t)$')
 #plt.ylabel(r'$y(t)$')
 #plt.zlabel(r'$z(t)$')
-plt.plot(t,Z,'g')
+#plt.plot(t,Z,'g')
 plt.plot(t,X,'b')
 plt.plot(t,Y,'r')
 plt.plot(t,Phi,'w')
