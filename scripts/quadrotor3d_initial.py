@@ -47,6 +47,10 @@ tf = 30
 tstep = 0.07
 t = np.arange(start=0, stop=tf,step=tstep)
 
+# linearized system matrices
+A = np.array([[],[],[],[],[],[]])
+B = np.array([[],[],[],[],[],[]])
+
 # equillibrium input
 u0 = np.array([[m*g],[0],[0],[0]])
 
@@ -140,3 +144,10 @@ plt.plot(t,Y,'r')
 #plt.plot(t,Psi,'y')
 plt.grid(linestyle='--', linewidth='0.5', color='white')
 plt.show()
+
+
+self.A = np.array([[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1],[0,0,-g,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]])   #linearized system matrix
+        self.B = = np.array([[0,0],[0,0],[0,0],[0,0],[1/m,0],[0,1/Ixx]])    #linearized input matrix
+#F = np.array([[y[3]], [y[4]], [y[5]], [0], [-self.g], [0]])
+        #G = np.array([[0,0], [0,0], [0,0], [(-1/m)*np.sin(y[2]),0], [(1/m)*np.cos(y[2]),0], [0,1/self.Ixx]])
+        return np.squeeze(np.matmul(self.A,y) + np.matmul(self.B,u)).tolist()
