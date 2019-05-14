@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.integrate import odeint
+from scipy.linalg import block_diag
+from numpy import block
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 
@@ -22,45 +24,81 @@ M = np.linalg.inv(np.array([[1, 1, 1, 1],[0,l,0,-l],[-l,0,l,0],[gamma,-gamma,gam
 I  = np.array([[Ixx, 0.0, 0.0],[0.0, Iyy, 0.0],[0.0, 0.0, Izz]])
 Iinv = np.array([[1/Ixx, 0.0, 0.0],[0.0, 1/Iyy, 0.0],[0.0, 0.0, 1/Izz]])
 
-Ku = 10
-Tu = 12
-# position and velocity gains 
-Kp = {
-    'x': 0.8*Ku,
-    'y': 0.8*Ku,
-    'z': 1e2,
-    'phi': 5e0,
-    'theta': 5e0,
-    'psi': 0.0
-}   
-Kd = {
-    'x_dot': 0.1*Ku*Tu,
-    'y_dot': 0.1*Ku*Tu,
-    'z_dot': 15,
-    'phi_dot': 2e0,
-    'theta_dot': 2e0,
-    'psi_dot': 0.0
-} 
+
+
 
 # simulation parameters
-tf = 30
-tstep = 0.07
+tf = 5
+tstep = 0.01
 t = np.arange(start=0, stop=tf,step=tstep)
 
 # linearized system matrices
-A = np.array([[],[],[],[],[],[],[],[],[],[],[],[]])
-B = np.array([[],[],[],[],[],[],[],[],[],[],[],[]])
+a = np.array([
+        [g*np.cos(np.pi/4), g*np.sin(np.pi/4), 0],
+        [g*np.sin(np.pi/4),-g*np.cos(np.pi/4),0],
+        [0,0,0]])
+A1 = np.hstack((np.zeros((3,6)),np.eye(3,3),np.zeros((3,3))))
+A2 = np.hstack((np.zeros((3,3)),np.eye(3,3),np.zeros((3,6))))
+A3 = np.hstack((np.zeros((3,3)),a,np.zeros((3,6))))
+A4 = np.zeros((3,12))
+
+A = np.vstack((A1,A2,A3,A4))
+
+B1 = np.zeros((8,4))
+B2 = np.array([1/m,0,0,0])
+B3 = np.hstack((np.zeros((3,1)),block_diag([1/Ixx],[1/Iyy],[1/Izz])))
+
+B = np.vstack((B1,B2,B3))
+
+Ku = 0
+Tu = 0
+# position and velocity gains 
+Kp = {
+    'x': 0,
+    'y': 0,
+    'z': 1e2,
+    'phi': 1e-1,
+    'theta': 1e-1,
+    'psi': 0.0
+}   
+Kd = {
+    'x_dot': 0e0,
+    'y_dot': 0e2,
+    'z_dot': 1e1,
+    'phi_dot': 1e-2,
+    'theta_dot': 1e-2,
+    'psi_dot': 0.0
+} 
+# Ku = 10
+# Tu = 12
+# # position and velocity gains 
+# Kp = {
+#     'x': 0.8*Ku,
+#     'y': 0.8*Ku,
+#     'z': 1e2,
+#     'phi': 5e0,
+#     'theta': 5e0,
+#     'psi': 0.0
+# }   
+# Kd = {
+#     'x_dot': 0.1*Ku*Tu,
+#     'y_dot': 0.1*Ku*Tu,
+#     'z_dot': 15,
+#     'phi_dot': 2e0,
+#     'theta_dot': 2e0,
+#     'psi_dot': 0.0
+# } 
 
 # equillibrium input
 u0 = np.array([[m*g],[0],[0],[0]])
 
 # initial pose
-q0 = [0.0, 0.0, 0.0, np.pi/180*0.0, np.pi/180*0.0, np.pi/180*0.0]
+q0 = [0.0, 1.0, 0.0, np.pi/180*0.0, np.pi/180*10.0, np.pi/180*0.0]
 q0_dot = [0]*6
 x0 = np.array(q0 + q0_dot)
 
 # desired pose
-qd = [2.0, 2.0, 0.0, 0.0, 0.0, 0.0]
+qd = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 qd_dot = [0]*6
 qd_ddot = [0]*6
 xd = np.array(qd + qd_dot + qd_ddot)
@@ -76,7 +114,9 @@ def xdot_3d(x,t,xd):
     psi_c = xd[5]
     phi_c = 1/g*(x_ddot_c*np.sin(psi_c) - y_ddot_c*np.cos(psi_c))
     theta_c = 1/g*(x_ddot_c*np.cos(psi_c) - y_ddot_c*np.sin(psi_c))
-    u1 = z_ddot_c + m*g
+    #u1 = z_ddot_c + m*g        #NL
+    u1 = z_ddot_c 
+    
     # attitude controller
     p = x[9]
     q = x[10]
@@ -88,13 +128,17 @@ def xdot_3d(x,t,xd):
                    Kp['theta']*(theta_c - x[4]) + Kd['theta_dot']*(q_c - q),
                    Kp['psi']*(psi_c - x[5]) +     Kd['psi_dot']*(r_c - r)])
 
-    # CLOSED-LOOP DYNAMICS
-    r_dot = x[6:9]
-    omega_dot_w = body2world_vel(x[3:6],x[9:12])
-    r_ddot = np.squeeze(np.array([[0.0],[0.0],[-m*g]]) + Rot(x[3:6])@np.array([[0.0],[0.0],[u1]]))
-    omega_ddot_b = Iinv@(u2 - np.cross(x[9:12],I@x[9:12]))
+    uu = np.vstack((u1,u2.reshape(3,1)))
+
+    # NL Dynamics
+    #r_dot = x[6:9]
+    #omega_dot_w = body2world_vel(x[3:6],x[9:12])
+    #r_ddot = np.squeeze(np.array([[0.0],[0.0],[-m*g]]) + Rot(x[3:6])@np.array([[0.0],[0.0],[u1]]))
+    #omega_ddot_b = Iinv@(u2 - np.cross(x[9:12],I@x[9:12]))
     #breakpoint()
-    return np.concatenate((r_dot,omega_dot_w,r_ddot,omega_ddot_b),axis=0)
+
+    # Linear Dynamics
+    return np.squeeze(np.matmul(A,x.reshape(12,1)) + np.matmul(B,uu))
 
 def world2body_vel(euler,omega_dot_w):
     # euler = [phi, theta, psi] the roll, pitch, and yaw angles in world frame
@@ -139,15 +183,9 @@ Psi = np.array(x)[:,5]
 plt.plot(t,Z,'g')
 plt.plot(t,X,'b')
 plt.plot(t,Y,'r')
-#plt.plot(t,Phi,'w')
-#plt.plot(t,Theta,'c')
+plt.plot(t,Phi,'w')
+plt.plot(t,Theta,'c')
 #plt.plot(t,Psi,'y')
 plt.grid(linestyle='--', linewidth='0.5', color='white')
 plt.show()
 
-
-self.A = np.array([[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1],[0,0,-g,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]])   #linearized system matrix
-        self.B = = np.array([[0,0],[0,0],[0,0],[0,0],[1/m,0],[0,1/Ixx]])    #linearized input matrix
-#F = np.array([[y[3]], [y[4]], [y[5]], [0], [-self.g], [0]])
-        #G = np.array([[0,0], [0,0], [0,0], [(-1/m)*np.sin(y[2]),0], [(1/m)*np.cos(y[2]),0], [0,1/self.Ixx]])
-        return np.squeeze(np.matmul(self.A,y) + np.matmul(self.B,u)).tolist()
