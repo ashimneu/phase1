@@ -28,21 +28,17 @@ Iinv = np.array([[1/Ixx, 0.0, 0.0],[0.0, 1/Iyy, 0.0],[0.0, 0.0, 1/Izz]])
 
 
 # simulation parameters
-tf = 1
+tf = 5
 tstep = 0.01
 t = np.arange(start=0, stop=tf,step=tstep)
 
 # linearized system matrices
-a = np.array([
-        [g*np.cos(np.pi/4), g*np.sin(np.pi/4), 0],
-        [g*np.sin(np.pi/4),-g*np.cos(np.pi/4),0],
-        [0,0,0]])
-A1 = np.hstack((np.zeros((3,6)),np.eye(3,3),np.zeros((3,3))))
-A2 = np.hstack((np.zeros((3,9)),np.eye(3,3)))
-A3 = np.hstack((np.zeros((3,3)),a,np.zeros((3,6))))
-A4 = np.zeros((3,12))
+A1 = np.hstack((np.zeros((6,6)),np.eye(6,6)))
+A2 = np.zeros((6,12))
+A2[0,4] = g
+A2[1,3] = -g
 
-A = np.vstack((A1,A2,A3,A4))
+A = np.vstack((A1,A2))
 
 B1 = np.zeros((8,4))
 B2 = np.array([1/m,0,0,0])
@@ -52,53 +48,37 @@ B = np.vstack((B1,B2,B3))
 
 Ku = 0
 Tu = 0
+
+
 # position and velocity gains 
 Kp = {
-    'x': 1e1,
-    'y': 0,
+    'x': 2e1,
+    'y': 2e1,
     'z': 1e2,
-    'phi': 5e0,
-    'theta': 5e0,
+    'phi': 1e0,
+    'theta': 1e0,
     'psi': 0.0
 }   
 Kd = {
-    'x_dot': 1e-2,
-    'y_dot': 0e2,
+    'x_dot': 6e0,
+    'y_dot': 6e0,
     'z_dot': 1e1,
-    'phi_dot': 1e-4,
-    'theta_dot': 1e-4,
+    'phi_dot': 1e-2,
+    'theta_dot': 1e-2,
     'psi_dot': 0.0
 } 
-# Ku = 10
-# Tu = 12
-# # position and velocity gains 
-# Kp = {
-#     'x': 0.8*Ku,
-#     'y': 0.8*Ku,
-#     'z': 1e2,
-#     'phi': 5e0,
-#     'theta': 5e0,
-#     'psi': 0.0
-# }   
-# Kd = {
-#     'x_dot': 0.1*Ku*Tu,
-#     'y_dot': 0.1*Ku*Tu,
-#     'z_dot': 15,
-#     'phi_dot': 2e0,
-#     'theta_dot': 2e0,
-#     'psi_dot': 0.0
-# } 
+
 
 # equillibrium input
 u0 = np.array([[m*g],[0],[0],[0]])
 
 # initial pose
-q0 = [0.0, 0.0, 0.0, np.pi/180*0.0, np.pi/180*0.0, np.pi/180*0.0]
+q0 = [10.0, 10.0, 10.0, np.pi/180*0.0, np.pi/180*0.0, np.pi/180*0.0]
 q0_dot = [0]*6
 x0 = np.array(q0 + q0_dot)
 
 # desired pose
-qd = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+qd = [2.0, -10.0, -2.0, 0.0, 0.0, 0.0]
 qd_dot = [0]*6
 qd_ddot = [0]*6
 xd = np.array(qd + qd_dot + qd_ddot)
@@ -180,11 +160,11 @@ Psi = np.array(x)[:,5]
 #plt.xlabel(r'$x(t)$')
 #plt.ylabel(r'$y(t)$')
 #plt.zlabel(r'$z(t)$')
-#plt.plot(t,Z,'g')
+plt.plot(t,Z,'g')
 plt.plot(t,X,'b')
 plt.plot(t,Y,'r')
-plt.plot(t,Phi,'w')
-plt.plot(t,Theta,'c')
+#plt.plot(t,Phi,'w')
+#plt.plot(t,Theta,'c')
 #plt.plot(t,Psi,'y')
 plt.grid(linestyle='--', linewidth='0.5', color='white')
 plt.show()
