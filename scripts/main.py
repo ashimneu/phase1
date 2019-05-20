@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import odeint
 from Tkinter import *
 import subprocess
 
-class Main:
+
+
+class Gui_Main:
 
     def __init__(self, master):
         # Master Setup
@@ -85,7 +89,7 @@ class quad2d_class():
         self.lbl_hovertime = Label(self.frame1, text="Hover Time: ", fg="black", font=("Courier", 18), width=17)
         self.lbl_hovertime.place(x =30, y=155)
 
-        self.lbl_suggestion1 = Label(self.frame1, text="y,z,\u03A6", bg="white", fg="black", font=("Courier", 18), width=17)
+        self.lbl_suggestion1 = Label(self.frame1, text=u"y,z,\u03A6", bg="white", fg="black", font=("Courier", 18), width=17)
         self.lbl_suggestion1.place(x=500,y=50)
 
         self.lbl_suggestion2 = Label(self.frame1, text="z", bg="white", fg="black", font=("Courier", 18), width=17)
@@ -125,18 +129,16 @@ class quad2d_class():
         tmp_hoverpose = self.entry_hoverpose.get().strip()
         tmp_hovertime = self.entry_hovertime.get().strip()
 
-        #print('len initial pose: ', len(tmp_initialpose))
-        #print('len tkfheight: ', len(tmp_tkfheight))
-        #print('len hoverpose: ', len(tmp_hoverpose))
-        #print('len hovertime: ', len(tmp_hovertime))
-
-        #error_in_input = check4error(tmp_initialpose,tmp_tkfheight,tmp_hoverpose,tmp_hovertime,3)
-        #error_in_input = False
         try:
             self.initialpose = [float(x) for x in tmp_initialpose.split(',')]
             self.tkfheight = float(tmp_tkfheight)
             self.hoverpose = [float(x) for x in tmp_hoverpose.split(',')]
             self.hovertime = float(tmp_hovertime)
+
+            #launch_quad2d([0, 0, 0], 5, [5, 15], 3)
+            launch_quad2d(self.initialpose, self.tkfheight, self.hoverpose, self.hovertime)
+
+
 
         except:
             print('One or more inputs are incorrect. Please follow the specified input formats.')
@@ -184,13 +186,13 @@ class quad3d_class():
         self.lbl_hovertime = Label(self.frame1, text="Hover Time: ", fg="black", font=("Courier", 18), width=17)
         self.lbl_hovertime.place(x =30, y=155)
 
-        self.lbl_suggestion1 = Label(self.frame1, text="x,y,z,\u03A6,\u03F4,\u03A8", bg="white", fg="black", font=("Courier", 18), width=17)
+        self.lbl_suggestion1 = Label(self.frame1, text=u"x,y,z,\u03A6,\u03F4,\u03A8", bg="white", fg="black", font=("Courier", 18), width=17)
         self.lbl_suggestion1.place(x=500,y=50)
 
         self.lbl_suggestion2 = Label(self.frame1, text="z", bg="white", fg="black", font=("Courier", 18), width=17)
         self.lbl_suggestion2.place(x=500,y=85)
 
-        self.lbl_suggestion3 = Label(self.frame1, text="x,y,z", bg="white", fg="black", font=("Courier", 18), width=17)
+        self.lbl_suggestion3 = Label(self.frame1, text=u"x,y,z,\u03A8", bg="white", fg="black", font=("Courier", 18), width=17)
         self.lbl_suggestion3.place(x=500,y=120)
 
         self.lbl_suggestion4 = Label(self.frame1, text="time", bg="white", fg="black", font=("Courier", 18), width=17)
@@ -229,6 +231,10 @@ class quad3d_class():
             self.tkfheight = float(tmp_tkfheight)
             self.hoverpose = [float(x) for x in tmp_hoverpose.split(',')]
             self.hovertime = float(tmp_hovertime)
+            rospy.set_param('/quad3d/initialpose', self.initialpose)
+            rospy.set_param('/quad3d/tkfheight', self.tkfheight)
+            rospy.set_param('/quad3d/hoverpose', self.hoverpose)
+            rospy.set_param('/quad3d/hovertime', self.hovertime)
             launch_Quad3D()
         except:
             print('One or more inputs are incorrect. Please follow the specified input formats.')
@@ -239,14 +245,6 @@ class quad3d_class():
         root.deiconify()
         self.master.withdraw()
 
-
-def launch_Quad2D():
-    global nodeQuad2D
-    nodeQuad2D = subprocess.Popen(["rosrun", "phase1", "Quad2D.py"])
-def kill_Quad2D():
-    global nodeQuad2D
-    nodeQuad2D.kill()
-
 def launch_Quad3D():
     global nodeQuad3D
     nodeQuad3D = subprocess.Popen(["rosrun", "phase1", "Quad3D.py"])
@@ -254,38 +252,151 @@ def kill_Quad3D():
     global nodeQuad3D
     nodeQuad3D.kill()
 
+class Quad2D():
+    def __init__(self):
+        self.g = 9.80665  # [meters/sec^2]
+        self.m = 0.030  # [kilograms]
+        self.l = 0.046  # [meters]
+        self.Ixx = 1.43e-5  # [kilogram*meters^2]
+        self.Kp = np.array([1,50,1200])
+        self.Kd = np.array([1.5,12,self.Kp[2]/8])
+        self.yd = np.array([5,15,0,0,0,0,0,0,0])
+        self.A = np.array([[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1],[0,0,-self.g,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]])   #linearized system matrix
+        self.B = np.array([[0,0],[0,0],[0,0],[0,0],[1/self.m,0],[0,1/self.Ixx]])    #linearized input matrix
+        self.initialpose = np.asarray([5.0,5.0,np.pi/8,0.0,0.0,0.0])
+        self.currentpose = self.initialpose
+        self.desiredpose = np.array([15,15,0,0,0,0,0,0,0])
+        self.start_time = None
+        self.end_time = None
+        self.dt = 0.1
+        self.pose_trajectory = None
+        self.time_trajectory = None
+
+    def xdot_2d(self,y,t,yd,u0,m,g,Ixx,Kp,Kd):
+        # CONTROLLER
+        e = yd[0:6] - y
+        # position controller
+        u1 = m * (yd[7] + Kd[1] * e[4] + Kp[1] * e[1])
+        theta_d = -1 / g * (yd[6] + Kd[0] * e[3] + Kp[0] * e[0])
+        # attitude controller
+        u2 = Ixx * (yd[8] + Kd[2] * e[5] + Kp[2] * (theta_d - y[2]))  # add theta_d
+        u = np.array([[u1], [u2]]) + u0
+        # CLOSED-LOOP DYNAMICS
+        #F = np.array([[y[3]], [y[4]], [y[5]], [0], [-self.g], [0]])
+        #G = np.array([[0,0], [0,0], [0,0], [(-1/m)*np.sin(y[2]),0], [(1/m)*np.cos(y[2]),0], [0,1/self.Ixx]])
+        return np.squeeze(np.matmul(self.A,y.reshape(6,1)) + np.matmul(self.B,u)).tolist()
+
+    def simulate(self):
+        x0 = self.currentpose
+        u0 = np.array([[self.m * self.g], [0]])
+        yd = self.desiredpose
+        m = self.m
+
+        # simulation parameters
+        ts = self.start_time
+        tf = self.end_time
+        tstep = self.dt
+        t = np.arange(start=ts, stop=tf, step=tstep)
+        x = odeint(self.xdot_2d, x0, t, args=(yd,u0,self.m,self.g,self.Ixx,self.Kp,self.Kd))
+        self.pose_trajectory= x
+        self.time_trajectory = t
+
+    def run_once(self,currentpose,desiredpose,start_time,end_time):
+        self.currentpose = currentpose
+        self.desiredpose = desiredpose
+        self.start_time = start_time
+        self.end_time = end_time
+        self.simulate()
+        return
+
+
+def launch_quad2d(ip,tkh,hl,ht):
+    # ip -initial pose, tkh -takeoff height, hl -hover location, ht -hover time
+    Robot = Quad2D()
+    dt = 0.005
+    cp1 = np.asarray([ip[0], ip[1], ip[2], 0.0, 0.0, 0.0])
+    dp1 = np.array([0, tkh, 0, 0, 0, 0, 0, 0, 0])
+    t0 = 0
+    t1 = 5
+    Robot.run_once(cp1, dp1, t0, t0 + t1)
+    trajectory_1 = Robot.pose_trajectory
+    time_1 = Robot.time_trajectory
+
+    # fly from takeoff 2 hover pose
+    cp2 = trajectory_1[-1, 0:6]
+    dp2 = np.array([hl[0], hl[1], 0, 0, 0, 0, 0, 0, 0])
+    t2 = 5
+    Robot.run_once(cp2, dp2, t1 + dt, t1 + t2)
+    trajectory_2 = Robot.pose_trajectory
+    time_2 = Robot.time_trajectory
+
+    # Hover for some time
+    cp3 = trajectory_2[-1, 0:6]
+    dp3 = np.array([hl[0], hl[0], 0, 0, 0, 0, 0, 0, 0])
+    t3 = ht
+    Robot.run_once(cp3, dp3, t2 + dt, t2 + t3)
+
+    trajectory_3 = Robot.pose_trajectory
+    time_3 = Robot.time_trajectory
+
+    # Land from Hover pose
+    cp4 = trajectory_3[-1, 0:6]
+    dp4 = np.array([hl[0], 0, 0, 0, 0, 0, 0, 0, 0])
+    t4 = 5
+    Robot.run_once(cp4, dp4, t3 + dt, t3 + t4)
+
+    trajectory_4 = Robot.pose_trajectory
+    time_4 = Robot.time_trajectory
+
+    x = np.concatenate((trajectory_1, trajectory_2, trajectory_3, trajectory_4), axis=0)
+    t = np.concatenate((time_1, time_2, time_3, time_4), axis=0)
+
+    # extract for plotting
+    Y = np.array(x)[:, 0]
+    Z = np.array(x)[:, 1]
+    Theta = np.array(x)[:, 2]
+
+    # plot results
+    plt.subplot(2, 2, 1)
+    plt.plot(Y, Z, 'b')
+    plt.xlabel(r'$y(t)$')
+    plt.ylabel(r'$z(t)$')
+    plt.xlim(-10, 10)
+    plt.ylim(-1, 20)
+    plt.grid(True)
+
+    plt.subplot(2, 2, 2)
+    plt.plot(t, Y, 'b')
+    plt.xlabel(r'$t$')
+    plt.ylabel(r'$y(t)$')
+    plt.xlim(-1, 15)
+    plt.ylim(-5, 15)
+    plt.grid(True)
+
+    plt.subplot(2, 2, 3)
+    plt.plot(t, Z, 'b')
+    plt.xlabel(r'$t$')
+    plt.ylabel(r'$z(t)$')
+    plt.xlim(-1, 15)
+    plt.ylim(-5, 15)
+    plt.grid(True)
+
+    plt.subplot(2, 2, 4)
+    plt.plot(t, Theta, 'b')
+    plt.xlabel(r'$t$')
+    plt.ylabel(r'$\phi$')
+    plt.xlim(-1, 15)
+    plt.ylim(-4, 4)
+    plt.grid(True)
+    plt.show()
+
+
 if __name__ == '__main__':
     rospy.init_node('Main')
     root = Tk()
-    Window1 = Main(root)
+    Window1 = Gui_Main(root)
     Window1.master.resizable(width=False, height=False)
     nodeQuad2D = None
     nodeQuad3D = None
     root.mainloop()
 
-
-'''
-def check4error(tmp_initialpose, tmp_tkfheight, tmp_hoverpose, tmp_hovertime, tmp_quadrotor_type):
-    there_is_error = True
-
-
-    if tmp_quadrotor_type == 2:
-        if len(initialpose)==3 and len(tkfheight)==1 and len(hoverpose)==2 and len(hovertime)==1 :
-            there_is_error = False
-        else:
-            there_is_error = False
-    elif tmp_quadrotor_type == 3:
-        if len(initialpose)==6 and len(tkfheight)==1 and len(hoverpose)==3 and len(hovertime)==1 :
-            there_is_error = False
-        else:
-            there_is_error = True
-    return there_is_error
-
-
-        #print('len initial pose: ', len(tmp_initialpose))
-        #print('len tkfheight: ', len(tmp_tkfheight))
-        #print('len hoverpose: ', len(tmp_hoverpose))
-        #print('len hovertime: ', len(tmp_hovertime))
-
-        #error_in_input = check4error(tmp_initialpose,tmp_tkfheight,tmp_hoverpose,tmp_hovertime,3)
-        #error_in_input = False'''

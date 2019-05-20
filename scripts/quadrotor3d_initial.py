@@ -73,12 +73,12 @@ Kd = {
 u0 = np.array([[m*g],[0],[0],[0]])
 
 # initial pose
-q0 = [10.0, 10.0, 10.0, np.pi/180*0.0, np.pi/180*0.0, np.pi/180*0.0]
+q0 = [15, 15, 15, np.pi/180*0.0, np.pi/180*0.0, np.pi/180*0.0]
 q0_dot = [0]*6
 x0 = np.array(q0 + q0_dot)
 
 # desired pose
-qd = [2.0, -10.0, -2.0, 0.0, 0.0, 0.0]
+qd = [15, 15, 0, 0.0, 0.0, 0.0]
 qd_dot = [0]*6
 qd_ddot = [0]*6
 xd = np.array(qd + qd_dot + qd_ddot)
@@ -167,5 +167,10 @@ plt.plot(t,Y,'r')
 #plt.plot(t,Theta,'c')
 #plt.plot(t,Psi,'y')
 plt.grid(linestyle='--', linewidth='0.5', color='white')
+
+# Data for a three-dimensional line
+fig2 = plt.figure(2)
+ax = plt.axes(projection='3d')
+ax.plot3D(X, Y, Z, 'gray')
 plt.show()
 
